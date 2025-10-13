@@ -29,6 +29,8 @@ public class DocExecutor {
     private Level logLevel = Level.INFO;
     private boolean contentShrinkingWarning = true;
     private boolean enableCache = true;
+    private boolean purgeCache = false;
+    private Path searchDocPath = Paths.get("");
 
     /**
      * @param overwrite If set to true, the console and the file node will be overwritten
@@ -270,5 +272,23 @@ public class DocExecutor {
 
     public boolean isContentShrinkingWarning() {
         return contentShrinkingWarning;
+    }
+
+    public DocExecutor setPurgeCache(boolean purgeCache) {
+        this.purgeCache = purgeCache;
+        return this;
+    }
+
+    public boolean getPurgeCache() {
+        return purgeCache;
+    }
+
+    public DocExecutor setSearchDocPath(Path searchDocPath) {
+        this.searchDocPath = searchDocPath;
+        return this;
+    }
+
+    public Path getSearchDocPath() {
+        return this.searchDocPath;
     }
 }

@@ -1,5 +1,7 @@
 package com.combostrap.docExec;
 
+import com.combostrap.docExec.util.Fs;
+import com.combostrap.docExec.util.Glob;
 import picocli.CommandLine;
 
 import java.nio.file.Path;
@@ -9,10 +11,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 @CommandLine.Command(
         name = "run",
-        description = "Execute documentation code blocks",
+        description = {
+                "Execute documentation code blocks",
+                "",
+                "Examples:",
+                "",
+                "   To run a page with caching disabled",
+                "      doc-exec run --no-cache page/namespace/name.txt",
+                "",
+                "   To run all page with caching disabled",
+                "",
+                "      doc-exec run --no-cache *",
+                ""
+        },
         mixinStandardHelpOptions = true
 )
 public class DocExecutorCliRunCommand implements Callable<Integer> {
@@ -29,6 +44,16 @@ public class DocExecutorCliRunCommand implements Callable<Integer> {
             description = "Do not overwrite the documentation files (no result in the console, no inline file included)"
     )
     private boolean overwrite = true;
+
+    @CommandLine.Option(
+            names = {"--purge-cache"},
+            // default value when no flag is present
+            // because the flag is a negated form, the value is negated if present
+            // https://github.com/remkop/picocli/issues/813#issuecomment-532423733
+            defaultValue = "false",
+            description = "Do not overwrite the documentation files (no result in the console, no inline file included)"
+    )
+    private boolean purgeCache = false;
 
     @CommandLine.Option(
             names = {"--no-capture-stderr"},
@@ -50,8 +75,8 @@ public class DocExecutorCliRunCommand implements Callable<Integer> {
     @CommandLine.Option(names = {"-pf", "--paths-inline-file"}, description = "Set a list of directories where to search for inline files (Files inlined in the doc)", defaultValue = ".")
     private List<Path> searchInlineFilePaths = List.of(Paths.get("."));
 
-    @CommandLine.Option(names = {"--paths-doc", "-pd"}, description = "Set a list of directory where to search for the documentation file if the path is relative", defaultValue = ".")
-    private List<Path> searchDocPaths = List.of(Paths.get("."));
+    @CommandLine.Option(names = {"--path-doc", "-pd"}, description = "A directory where to search for the documentation files if the glob path is relative", defaultValue = ".")
+    private Path searchDocPath = Paths.get(".");
 
     @CommandLine.Option(names = {"--log-level"}, description = "Log level (SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST)", defaultValue = "INFO")
     private Level logLevel = Level.INFO;
@@ -75,7 +100,11 @@ public class DocExecutorCliRunCommand implements Callable<Integer> {
     @CommandLine.Option(names = {"--shell-command-use-binary"}, description = "Use shell binary for command execution (command=true/false)")
     private Map<String, String> shellCommandUseBinary = new HashMap<>();
 
-    @CommandLine.Parameters(description = "Docs to execute as glob expression")
+    @CommandLine.Parameters(
+            description = "One or more docs to execute as glob expression or file path",
+            // at least 1
+            arity = "1..*"
+    )
     private String[] docs = new String[0];
 
     @Override
@@ -91,8 +120,10 @@ public class DocExecutorCliRunCommand implements Callable<Integer> {
                     .setEnableCache(enableCache)
                     .setStopRunAtFirstError(stopRunAtFirstError)
                     .setSearchFilePaths(searchInlineFilePaths)
+                    .setSearchDocPath(searchDocPath)
                     .setLogLevel(logLevel)
-                    .setContentShrinkWarning(contentShrinkingWarning);
+                    .setContentShrinkWarning(contentShrinkingWarning)
+                    .setPurgeCache(purgeCache);
 
             // Set system properties
             for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
@@ -121,20 +152,10 @@ public class DocExecutorCliRunCommand implements Callable<Integer> {
                 executor.setShellCommandExecuteViaShellBinary(entry.getKey(), useBinary);
             }
 
-            // Build the executor instance
-            DocExecutorInstance instance = executor.build();
+            // Build the executor instance and run
+            executor.build().run(docs);
 
-            // Process input files if provided
-            if (docs.length > 0) {
-                System.out.println("Processing " + docs.length + " file(s)...");
-                for (String file : docs) {
-                    System.out.println("Processing: " + file);
-                    // TODO: Add actual file processing logic here
-                }
-            } else {
-                System.out.println("DocExecutor configured successfully. No input files specified.");
-            }
-
+            // We throw if any error
             return 0;
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());

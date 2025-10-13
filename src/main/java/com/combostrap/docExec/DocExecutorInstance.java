@@ -1,13 +1,13 @@
 package com.combostrap.docExec;
 
 
-import com.combostrap.docExec.util.Fs;
-import com.combostrap.docExec.util.Strings;
+import com.combostrap.docExec.util.*;
 
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -34,6 +34,11 @@ public class DocExecutorInstance {
         Logger logger = Logger.getLogger(packageName);
         logger.setLevel(docExecutor.getLogLevel());
 
+        DocCache docCache = docExecutor.getDocCache();
+        if (docCache != null && docExecutor.getPurgeCache()) {
+            docCache.purgeAll();
+        }
+
         List<DocExecutorResult> results = new ArrayList<>();
         for (Path path : paths) {
 
@@ -50,8 +55,8 @@ public class DocExecutorInstance {
                 /**
                  * Cache ?
                  */
-                if (docExecutor.getDocCache() != null) {
-                    String md5Cache = docExecutor.getDocCache().getMd5(childPath);
+                if (docCache != null) {
+                    String md5Cache = docCache.getMd5(childPath);
                     String md5 = Fs.getMd5(childPath);
                     if (md5.equals(md5Cache)) {
                         DocLog.LOGGER.info(docExecutor.getName() + " - Cache is on and the file (" + childPath + ") has already been executed. Skipping the execution");
@@ -80,8 +85,8 @@ public class DocExecutorInstance {
                     Fs.toFile(docExecutorResult.getNewDoc(), childPath);
                 }
 
-                if (docExecutor.getDocCache() != null) {
-                    docExecutor.getDocCache().store(childPath);
+                if (docCache != null) {
+                    docCache.store(childPath);
                 }
 
                 if (docExecutorResult.hasWarnings()) {
@@ -278,6 +283,7 @@ public class DocExecutorInstance {
 
     /**
      * Search an inline file in the list of search paths
+     *
      * @param fileStringPath - the relative path found in the doc
      * @return the real path
      * @throws RuntimeException if not found
@@ -304,5 +310,37 @@ public class DocExecutorInstance {
 
     public DocCache getCache() {
         return docExecutor.getDocCache();
+    }
+
+    public List<DocExecutorResult> run(String... globPaths) {
+        return run(Arrays.asList(globPaths));
+    }
+
+    public List<DocExecutorResult> run(List<String> globPaths) {
+
+        DocLog.LOGGER.info("Processing " + globPaths.size() + " glob path(s)...");
+        List<Path> totalPaths = new ArrayList<>();
+        for (String globPattern : globPaths) {
+            DocLog.LOGGER.info("Processing: " + globPattern);
+            if (globPattern.endsWith(Glob.DOUBLE_STAR)) {
+                globPattern += "/*";
+            }
+            String docFileExtension = ".{txt,md}";
+            if (!globPattern.contains(".")) {
+                globPattern = globPattern + docFileExtension;
+            }
+            GlobPath globPathObject = new GlobPath(globPattern);
+            List<Path> paths = Fs.getFilesByGlob(this.docExecutor.getSearchDocPath(), globPathObject)
+                    .stream()
+                    // Natural Order
+                    // [1-one, 2-two, 3-three, 10-ten, 20-twenty, 100-hundred]
+                    .sorted((x, y) -> Sorts.naturalSortComparator(x.toString(), y.toString()))
+                    .collect(Collectors.toList());
+            if (paths.isEmpty()) {
+                throw new RuntimeException("No docs selected for the glob : " + globPattern);
+            }
+            totalPaths.addAll(paths);
+        }
+        return run(totalPaths.toArray(new Path[0]));
     }
 }

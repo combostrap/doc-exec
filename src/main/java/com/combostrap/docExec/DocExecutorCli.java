@@ -9,10 +9,12 @@ import java.util.concurrent.Callable;
 import java.util.logging.Level;
 
 @Command(
-        name = "doc",
+        name = "doc-exec",
         mixinStandardHelpOptions = true,
         version = "1.0.0",
-        description = "Documentation execution tool",
+        description = {
+                "Run code in documentation page with unit elements",
+        },
         subcommands = {DocExecutorCliRunCommand.class}
 )
 public class DocExecutorCli implements Callable<Integer> {
@@ -21,7 +23,7 @@ public class DocExecutorCli implements Callable<Integer> {
     public Integer call() throws Exception {
         // Show help when no subcommand is provided
         CommandLine.usage(this, System.out);
-        return 0;
+        return 1;
     }
 
     public static void main(String[] args) {
