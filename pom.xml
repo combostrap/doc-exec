@@ -1,0 +1,373 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>Combostrap Doc Exec</name>
+    <groupId>com.combostrap</groupId>
+    <artifactId>combostrap-doc-exec</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <!-- Organization used in the manifest file as Package vendor -->
+    <organization>
+        <name>Combostrap</name>
+        <url>https://www.combostrap.com</url>
+    </organization>
+
+    <properties>
+
+        <!-- Why 17: To get JPackage to create msi -->
+        <jdk.version>17.0.16</jdk.version>
+        <jdk.distribution>temurin</jdk.distribution>
+
+        <!-- JReleaser -->
+        <jreleaser.version>1.17.0</jreleaser.version>
+
+        <!-- Encoding -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- Compiler Language -->
+        <maven.compiler.release>11</maven.compiler.release>
+
+        <!-- Maven Plugin versions -->
+        <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+        <maven.jar.plugin.version>3.4.1</maven.jar.plugin.version>
+        <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
+        <maven.resource.plugin.version>3.3.1</maven.resource.plugin.version>
+        <maven.javadoc.plugin.version>3.7.0</maven.javadoc.plugin.version>
+        <maven.gpg.plugin.version>3.2.4</maven.gpg.plugin.version>
+        <maven.dependency.plugin.version>3.7.0</maven.dependency.plugin.version>
+        <maven.clean.plugin.version>3.3.2</maven.clean.plugin.version>
+        <maven.deploy.plugin.version>3.1.2</maven.deploy.plugin.version>
+        <maven.install.plugin.version>3.1.2</maven.install.plugin.version>
+        <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
+        <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
+        <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
+        <maven.surefire.report.plugin.version>3.5.2</maven.surefire.report.plugin.version>
+        <maven.failsafe.plugin.version>3.5.2</maven.failsafe.plugin.version>
+        <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
+        <maven.dependency.versions.check.plugin.version>9.2.0</maven.dependency.versions.check.plugin.version>
+        <maven.asciidoctor.plugin.version>3.0.0</maven.asciidoctor.plugin.version>
+        <maven.build.helper.maven.plugin.version>3.6.0</maven.build.helper.maven.plugin.version>
+        <maven.cyclonedx.plugin.version>2.8.0</maven.cyclonedx.plugin.version>
+        <!-- https://mvnrepository.com/artifact/org.codehaus.mojo/exec-maven-plugin -->
+        <maven.exec.plugin.version>3.5.0</maven.exec.plugin.version>
+
+        <!-- https://github.com/git-commit-id/git-commit-id-maven-plugin/releases -->
+        <maven.git.plugin.version>9.0.2</maven.git.plugin.version>
+
+    </properties>
+    <dependencies>
+
+        <!-- Exec -->
+        <dependency>
+            <groupId>org.zeroturnaround</groupId>
+            <artifactId>zt-exec</artifactId>
+            <version>1.12</version>
+        </dependency>
+
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.12.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.12.1</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven.compiler.plugin.version}</version>
+                    <configuration>
+                        <optimize>true</optimize>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>default-compile</id>
+                            <configuration>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>${maven.source.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>${maven.assembly.plugin.version}</version>
+                    <executions>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven.jar.plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>default-jar</id>
+                            <configuration>
+                                <archive>
+                                    <manifest>
+                                        <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                        <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                                    </manifest>
+                                    <!-- Generate a jar INDEX.LIST -->
+                                    <index>true</index>
+                                    <manifestEntries>
+                                        <!-- Add the Maven coordinates in the manifest -->
+                                        <Maven-Project-Group-Id>${project.groupId}</Maven-Project-Group-Id>
+                                        <Maven-Project-Artifact-Id>${project.artifactId}</Maven-Project-Artifact-Id>
+                                        <Maven-Project-Version>${project.version}</Maven-Project-Version>
+                                        <Maven-Version>${maven.version}</Maven-Version>
+                                        <Maven-Build-Timestamp>${maven.build.timestamp}</Maven-Build-Timestamp>
+                                        <Maven-Build-Version>${maven.build.version}</Maven-Build-Version>
+                                        <!-- Package -->
+                                        <!-- https://docs.oracle.com/javase/8/docs/technotes/guides/versioning/spec/versioning2.html#wp89936 -->
+                                        <Package-Title>${project.name}</Package-Title>
+                                        <Package-Version>${project.version}</Package-Version>
+                                        <Package-Vendor>${project.organization.name}</Package-Vendor>
+                                        <Package-Vendor-Url>${project.organization.url}</Package-Vendor-Url>
+                                        <!-- Os -->
+                                        <Os-Arch>${os.arch}</Os-Arch>
+                                        <Os-Name>${os.name}</Os-Name>
+                                        <Os-Version>${os.version}</Os-Version>
+                                        <!-- Java -->
+                                        <Java-Version>${java.version}</Java-Version>
+                                        <Java-Version-Date>${java.version.date}</Java-Version-Date>
+                                        <Java-Vendor>${java.vendor}</Java-Vendor>
+                                        <Java-Vendor-Url>${java.vendor.url}</Java-Vendor-Url>
+                                        <Java-Vendor-Version>${java.vendor.version}</Java-Vendor-Version>
+                                        <Java-VM-Name>${java.vm.name}</Java-VM-Name>
+                                        <Java-VM-Version>${java.vm.version}</Java-VM-Version>
+                                        <Java-VM-Vendor>${java.vm.vendor}</Java-VM-Vendor>
+                                        <Java-VM-Info>${java.vm.info}</Java-VM-Info>
+                                        <Java-Runtime-Name>${java.runtime.name}</Java-Runtime-Name>
+                                        <Java-Runtime-Version>${java.runtime.version}</Java-Runtime-Version>
+                                        <!-- Add the Git and build info -->
+                                        <!-- https://github.com/git-commit-id/git-commit-id-maven-plugin/blob/master/docs/configuration-and-properties.md -->
+                                        <!-- https://github.com/git-commit-id/git-commit-id-plugin-core/blob/master/src/main/java/pl/project13/core/GitCommitPropertyConstant.java -->
+                                        <!-- Property are immutable so we can't set them and the IDE is not happy, we silence the warning -->
+                                        <!--suppress MavenModelInspection -->
+                                        <Build-Host>${git.build.host}</Build-Host>
+                                        <!-- The CI unique id -->
+                                        <!--suppress MavenModelInspection -->
+                                        <Build-Number>${git.build.number}</Build-Number>
+                                        <!-- Git info-->
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Branch>${git.branch}</Git-Branch>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Dirty>${git.dirty}</Git-Dirty>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Commit>${git.commit.id}</Git-Commit>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Commit-Abbrev>${git.commit.id.abbrev}</Git-Commit-Abbrev>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Commit-Describe>${git.commit.id.describe}</Git-Commit-Describe>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Commit-User-name>${git.build.user.name}</Git-Commit-User-name>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Commit-User-email>${git.build.user.email}</Git-Commit-User-email>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Commit-Message-Short>${git.commit.message.short}</Git-Commit-Message-Short>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Commit-Message-Full>${git.commit.message.full}</Git-Commit-Message-Full>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Commit-Time>${git.commit.time}</Git-Commit-Time>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Tag>${git.tag}</Git-Tag>
+                                        <!--suppress MavenModelInspection -->
+                                        <Git-Tags>${git.tags}</Git-Tags>
+                                    </manifestEntries>
+                                </archive>
+                                <!-- Remove examples and native-image -->
+                                <excludes>
+                                    <exclude>/examples/**</exclude>
+                                    <exclude>META-INF/native-image/**</exclude>
+                                </excludes>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>native-image-jar</id>
+                            <configuration>
+                                <archive>
+                                    <manifest>
+                                        <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                        <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                                    </manifest>
+                                    <!-- Generate a jar INDEX.LIST -->
+                                    <index>true</index>
+                                    <manifestEntries>
+                                        <!-- Add the Maven coordinates in the manifest -->
+                                        <Maven-Group-Id>${project.groupId}</Maven-Group-Id>
+                                        <Maven-Artifact-Id>${project.artifactId}</Maven-Artifact-Id>
+                                        <Maven-Version>${project.version}</Maven-Version>
+                                    </manifestEntries>
+                                </archive>
+                                <!-- Remove examples -->
+                                <excludes>
+                                    <exclude>/examples/**</exclude>
+                                </excludes>
+                                <classifier>native-image</classifier>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven.surefire.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven.failsafe.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-report-plugin</artifactId>
+                    <version>${maven.surefire.report.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>${maven.site.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven.javadoc.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>${maven.gpg.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${maven.resource.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${maven.dependency.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>${maven.install.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${maven.deploy.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${maven.clean.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven.enforcer.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.ning.maven.plugins</groupId>
+                    <artifactId>maven-dependency-versions-check-plugin</artifactId>
+                    <version>${maven.dependency.versions.check.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>${maven.build.helper.maven.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>${maven.exec.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.cyclonedx</groupId>
+                    <artifactId>cyclonedx-maven-plugin</artifactId>
+                    <version>${maven.cyclonedx.plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <!-- Git Injection -->
+                <!-- https://github.com/git-commit-id/git-commit-id-maven-plugin -->
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>${maven.git.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <!-- Binds to the initialize phase by default, so that all git properties are available -->
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skipPoms>false</skipPoms>
+                    <!-- Inject the properties in all pom -->
+                    <injectAllReactorProjects>true</injectAllReactorProjects>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>examples/**</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                            <goal>test-jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Create a test jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

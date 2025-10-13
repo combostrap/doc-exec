@@ -1,0 +1,180 @@
+# Bug in idea, you need to download and map the schema to the below file
+# $schema: https://jreleaser.org/schema/jreleaser-schema-1.17.0.json
+
+environment:
+  properties:
+    jdkPathPrefix: '/tmp/jdks/temurin'
+    jdkVersion: '17.0.16'
+    jdkDirectoryName: 'jdk-17.0.16+8'
+    depsPrefix: 'target/deps'
+
+# https://jreleaser.org/guide/latest/reference/project.html
+project:
+  name: doc-exec
+  #version: '{{projectVersion}}'
+  description: ComboStrap Doc Exec
+  longDescription: |
+    Doc Exec, execution of code inside documentation
+  authors:
+    - Combostrap Team
+  inceptionYear: '2025'
+  copyright: '2025 Combostrap.com'
+  license: FSL without Future License
+  vendor: Combostrap
+  snapshot:
+    pattern: .*-SNAPSHOT
+    # This is the default version value but if you search for, you get it
+    label: early-access
+  tags:
+    - documentation
+    - execution
+    - markdown
+    - wiki
+  links:
+    homepage: https://github.com/ComboStrap/doc-exec
+    documentation: https://github.com/ComboStrap/doc-exec
+  languages:
+    java:
+      groupId: com.combostrap
+      artifactId: combostrap-doc-exec
+      mainClass: com.combostrap.docExec.DocExecCli
+      version: '16.0.2'
+  stereotype: CLI
+
+# Create a GitHub release
+# https://jreleaser.org/guide/latest/reference/release/github.html
+release:
+  github:
+    owner: combostrap
+    name: doc-exec
+    # We create the tag
+    skipTag: true
+    # When this is a draft, it won’t be seen by the public unless it’s published.
+    draft: true
+    # Release by default
+    releaseName: "Release {{projectEffectiveVersion}}"
+    prerelease:
+      # # A regex to determine if the project version is a prerelease
+      pattern: .*-rc.*
+    # https://jreleaser.org/guide/latest/reference/release/changelog.html
+    changelog:
+      formatted: ALWAYS
+      format: '- {{commitShortHash}} {{commitTitle}}'
+      preset: 'conventional-commits'
+      contributors:
+        enabled: false
+      content: |
+        # Changelog Version {{projectEffectiveVersion}}
+
+        {{changelogChanges}}
+      labelers:
+        - label: 'feature'
+          title: 'Resolves #'
+          body: 'Resolves #'
+        - label: 'issue'
+          title: 'Fixes #'
+          body: 'Fixes #'
+        - label: 'issue'
+          title: 'Relates to #'
+          body: 'Relates to #'
+        - label: 'task'
+          title: '[chore]'
+      categories:
+        - title: '🚀 Features'
+          key: 'features'
+          labels:
+            - 'feature'
+        - title: '✅ Issues'
+          key: 'issues'
+          labels:
+            - 'issue'
+        - title: '🧰 Tasks'
+          key: 'tasks'
+          labels:
+            - 'task'
+      replacers:
+        - search: '\[chore\] '
+
+# Execute with jreleaser assemble
+assemble:
+  # https://jreleaser.org/guide/latest/reference/assemble/jlink.html
+  jlink:
+    # Assembly Name
+    # Used in the name of the assembly
+    # Example: combostrap-early-access-linux-x86_64.zip
+    doc-exec:
+      active: ALWAYS
+      imageName: '{{distributionName}}-{{projectEffectiveVersion}}'
+      executable: doc-exec
+      jdeps:
+        multiRelease: '11'
+        ignoreMissingDeps: true
+        targets:
+          - 'target/combostrap-doc-exec-{{projectVersion}}.jar'
+      additionalModuleNames:
+        # jdk.crypto.ec is mandatory to avoid handshake_failure on http request
+        # https://stackoverflow.com/questions/55439599/sslhandshakeexception-with-jlink-created-runtime
+        - 'jdk.crypto.ec'
+      targetJdks:
+        - path: '{{jdkPathPrefix}}Linux/{{jdkDirectoryName}}'
+          platform: 'linux-x86_64'
+      #        - path: '{{jdkPathPrefix}}Windows/{{jdkDirectoryName}}'
+      #          platform: 'windows-x86_64'
+      #        - path: '{{jdkPathPrefix}}Osx/{{jdkDirectoryName}}/Contents/Home'
+      #          platform: 'osx-x86_64'
+      mainJar:
+        path: 'target/combostrap-doc-exec-{{projectVersion}}.jar'
+      jars:
+        - pattern: '{{depsPrefix}}/*.jar'
+      swid:
+        tagRef: swid-tag
+  # https://jreleaser.org/guide/latest/reference/assemble/jpackage.html#_jlink_jpackage
+  jpackage:
+    doc-exec-jpackage:
+      # jpackage tool create only native installers for the platform it's running on
+      # https://github.com/jreleaser/jreleaser/blob/main/.github/workflows/step-jpackage.yml
+      active: NEVER
+      jlink: doc-exec
+      linux:
+        types: [ rpm ]
+      osx:
+        types: [ dmg ]
+      windows:
+        types: [ exe ]
+      applicationPackage:
+        # additional restrictions on app-version???
+        appVersion: 2.0.0
+
+
+# Distributions define artifacts that may be published using supported packages and announced with supported announcers.
+distributions:
+  doc-exec:
+    # Take the default value from the `assemble` node
+    # See with:
+    # jreleaser config --quiet  | grep -A 40 '^distributions' | yq
+    # grep because the output is not accepted by yq
+    type: JLINK
+
+# Create a software BOM (works only for non-snapshot)
+catalog:
+  active: ALWAYS
+  sbom:
+    active: ALWAYS
+    syft:
+      active: ALWAYS
+
+# Create signatures files for the distributions files and the checksum files
+signing:
+  active: ALWAYS
+  mode: COMMAND
+
+packagers:
+  brew:
+    active: ALWAYS
+    multiPlatform: true
+  docker:
+    active: ALWAYS
+    imageNames:
+      - "combostrap/{{distributionName}}:{{tagName}}"
+      - "combostrap/{{distributionName}}:latest"
+

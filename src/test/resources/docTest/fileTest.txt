@@ -1,0 +1,31 @@
+
+
+<unit>
+<file txt docFile/file.txt>
+This node should be replaced by the content of the file
+</file>
+<code dos>
+cat ./src/test/resources/docFile/file.txt
+</code>
+<console>
+
+</console>
+</unit>
+
+<unit>
+<file yaml docFile/file.yml>
+This node should be replaced by the content of the file
+</file>
+<code dos>
+cat ./src/test/resources/docFile/file.yml
+</code>
+<console>
+
+</console>
+</unit>
+
+<unit>
+<file yaml docFile/file.yml>
+This node should be replaced by the content of the file even without code
+</file>
+</unit>

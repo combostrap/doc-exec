@@ -1,0 +1,38 @@
+# Hello
+
+
+## World
+
+  * A normal one
+<unit>
+    <code java>
+        System.out.println("First test");
+    </code>
+    <console>
+        First test
+    </console>
+</unit>
+
+  * Without console and with an error (no first quote in the println function)
+<unit>
+    <code java>
+        System.out.println(Second test");
+    </code>
+</unit>
+
+   * Without console and without error
+<unit>
+    <code java>
+        System.out.println("Third test");
+    </code>
+</unit>
+
+  * A console cli
+<unit>
+    <code dos>
+        echo Hello Foo
+    </code>
+    <console>
+        Hello Foo
+    </console>
+</unit>

@@ -1,0 +1,7 @@
+# Cache file test
+
+## About
+
+This file should not be run after:
+  * after a successful run
+  * without being modified

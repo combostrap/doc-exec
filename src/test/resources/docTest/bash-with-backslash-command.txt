@@ -1,0 +1,11 @@
+
+  * echo Foo
+<unit>
+<code bash>
+echo \
+  Foo
+</code>
+<console>
+Foo
+</console>
+</unit>

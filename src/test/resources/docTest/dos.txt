@@ -1,0 +1,10 @@
+
+  * Hello foo must be seen as atomic, so the space should stay
+<unit>
+<code dos>
+echo "Hello  foo " bar
+</code>
+<console>
+Hello  foo  bar
+</console>
+</unit>

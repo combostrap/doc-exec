@@ -1,0 +1,13 @@
+This doc test is used to test the creation of the output
+
+
+<unit>
+    <code dos>
+        echo nico
+    </code>
+    <console>
+nico
+</console>
+</unit>
+
+

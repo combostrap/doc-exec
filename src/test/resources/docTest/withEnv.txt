@@ -1,0 +1,16 @@
+This doc test is used to test the
+setting of env variable
+
+
+<unit envHOME=Whatever>
+    <file>
+    </file>
+    <code dos>
+        echo %HOME%
+    </code>
+    <console>
+        Whatever
+    </console>
+</unit>
+
+

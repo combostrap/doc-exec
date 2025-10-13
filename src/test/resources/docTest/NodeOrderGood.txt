@@ -1,0 +1,12 @@
+
+
+<unit>
+
+<file txt dir\file.txt>
+</file>
+<code>
+echo file.txt
+</code>
+<console>
+</console>
+</unit>

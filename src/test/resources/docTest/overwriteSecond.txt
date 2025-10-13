@@ -1,0 +1,11 @@
+A doc that ends with a unit node.
+The execution should not add an EOL at the end
+
+
+<unit>
+    <code dos>
+    echo foo
+    </code>
+    <console>
+    </console>
+</unit>

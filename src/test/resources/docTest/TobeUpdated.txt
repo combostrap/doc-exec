@@ -1,0 +1,15 @@
+This doc test is used to test the
+replacement of a bad output.
+
+The new console will have in place of `Bad Output`,
+the output of the code ie `First test`
+<unit>
+    <code java>
+        System.out.println("First test");
+    </code>
+    <console>
+        Bad output
+    </console>
+</unit>
+
+
