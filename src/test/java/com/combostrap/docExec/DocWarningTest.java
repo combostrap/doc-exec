@@ -13,20 +13,21 @@ import java.nio.file.Paths;
  */
 public class DocWarningTest {
 
-  /**
-   * A code that output less content should throw a warning/error
-   */
-  @Test
-  public void warningContentShrink() {
-    final Path path = Paths.get("./src/test/resources/docTest/warning-content-shrink.txt");
+    /**
+     * A code that output less content should throw a warning/error
+     */
+    @Test
+    public void warningContentShrink() {
+        final Path path = Paths.get("./src/test/resources/docTest/warning-content-shrink.txt");
 
-    Assertions.assertThrows(DocWarning.class, () -> DocExecutor.create("test")
-      .setContentShrinkWarning(true)
-      .build()
-      .run(path)
-    );
+        Assertions.assertThrows(DocWarning.class, () -> DocExecutor.create("test")
+                .setContentShrinkWarning(true)
+                .setEnableCache(false)
+                .build()
+                .run(path)
+        );
 
-  }
+    }
 
 
 }

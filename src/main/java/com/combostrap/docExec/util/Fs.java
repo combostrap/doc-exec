@@ -818,7 +818,7 @@ public class Fs {
     public static String toString(Path path, Charset charset) {
 
         try {
-            return Files.readString(path, charset);
+            return Files.readString(path.toAbsolutePath(), charset);
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Unable to find the file (" + path.toAbsolutePath().normalize() + ")", e);
         } catch (IOException e) {

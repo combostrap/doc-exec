@@ -70,6 +70,13 @@
             <version>1.12</version>
         </dependency>
 
+        <!-- CLI -->
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.7.6</version>
+        </dependency>
+
 
         <!-- Testing -->
         <dependency>

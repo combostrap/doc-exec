@@ -16,10 +16,12 @@ public class DocExecutorResult {
     private int error = 0;
     // Indicate if the doc has been executed
     private boolean docHasBeenExecuted = false;
+    private boolean cacheHit = false;
     private int codeExecutionCounter = 0;
-  private List<String> warnings = new ArrayList<>();
+    private List<String> warnings = new ArrayList<>();
 
-  private DocExecutorResult(Path path) {
+
+    private DocExecutorResult(Path path) {
         this.path = path;
     }
 
@@ -60,15 +62,20 @@ public class DocExecutorResult {
         this.codeExecutionCounter++;
     }
 
-  public void addWarning(String s) {
-    this.warnings.add(s);
-  }
+    public void addWarning(String s) {
+        this.warnings.add(s);
+    }
 
-  public boolean hasWarnings() {
-    return !this.warnings.isEmpty();
-  }
+    public boolean hasWarnings() {
+        return !this.warnings.isEmpty();
+    }
 
-  public List<String> getWarnings() {
-    return this.warnings;
-  }
+    public List<String> getWarnings() {
+        return this.warnings;
+    }
+
+    public DocExecutorResult setCacheHit(boolean b) {
+        this.cacheHit = b;
+        return this;
+    }
 }

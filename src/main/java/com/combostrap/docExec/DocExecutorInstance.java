@@ -1,17 +1,16 @@
 package com.combostrap.docExec;
 
 
-
 import com.combostrap.docExec.util.Fs;
 import com.combostrap.docExec.util.Strings;
 
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class DocExecutorInstance {
 
@@ -56,7 +55,10 @@ public class DocExecutorInstance {
                     String md5 = Fs.getMd5(childPath);
                     if (md5.equals(md5Cache)) {
                         DocLog.LOGGER.info(docExecutor.getName() + " - Cache is on and the file (" + childPath + ") has already been executed. Skipping the execution");
-                        DocExecutorResult docExecutorResult = DocExecutorResult.get(childPath);
+                        DocExecutorResult docExecutorResult =
+                                DocExecutorResult
+                                        .get(childPath)
+                                        .setCacheHit(true);
                         results.add(docExecutorResult);
                         continue;
                     }
@@ -161,7 +163,8 @@ public class DocExecutorInstance {
                         fileChange = true;
                     }
 
-                    Path filePath = Paths.get(docExecutor.getBaseFileDirectory().toString(), fileStringPath);
+
+                    Path filePath = searchInlineFile(fileStringPath);
                     String fileContent = Fs.toString(filePath);
 
                     int start = docFileBlock.getLocationStart();
@@ -270,6 +273,25 @@ public class DocExecutorInstance {
         targetDoc.append(originalDoc, previousEnd, originalDoc.length());
         docExecutorResult.setNewDoc(targetDoc.toString());
         return docExecutorResult;
+
+    }
+
+    /**
+     * Search an inline file in the list of search paths
+     * @param fileStringPath - the relative path found in the doc
+     * @return the real path
+     * @throws RuntimeException if not found
+     */
+    private Path searchInlineFile(String fileStringPath) {
+        List<Path> resolvedPaths = new ArrayList<>();
+        for (Path searchFile : docExecutor.getSearchFilePaths()) {
+            Path file = searchFile.resolve(fileStringPath);
+            resolvedPaths.add(file);
+            if (Files.isRegularFile(file)) {
+                return file;
+            }
+        }
+        throw new RuntimeException("The file path (" + fileStringPath + ") found in the doc was not found. No files located at: " + resolvedPaths.stream().map(Path::toAbsolutePath).map(Path::toString).sorted().collect(Collectors.joining(", ")));
 
     }
 

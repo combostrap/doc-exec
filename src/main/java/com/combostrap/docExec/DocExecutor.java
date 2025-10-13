@@ -5,8 +5,7 @@ package com.combostrap.docExec;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 
 
@@ -103,7 +102,7 @@ public class DocExecutor {
         return new DocExecutorInstance(this);
     }
 
-    private Path baseFileDirectory = Paths.get(".");
+    private List<Path> searchFilePaths = List.of(Paths.get("."));
 
     /**
      * Do we stop at the first error
@@ -155,13 +154,18 @@ public class DocExecutor {
     }
 
     /**
-     * @param path the base path (Where do we will find the files defined in the file node)
+     * @param paths the base path (Where do we will find the files defined in the file node)
      * @return the runner for chaining instantiation
      */
-    public DocExecutor setBaseFileDirectory(Path path) {
-        this.baseFileDirectory = path;
+    public DocExecutor setSearchFilePaths(List<Path> paths) {
+        this.searchFilePaths = paths;
         return this;
     }
+
+    public DocExecutor setSearchFilePaths(Path... paths) {
+        return setSearchFilePaths(Arrays.asList(paths));
+    }
+
 
     public DocExecutor setLogLevel(Level level) {
         this.logLevel = level;
@@ -256,8 +260,8 @@ public class DocExecutor {
         return overwrite;
     }
 
-    public Path getBaseFileDirectory() {
-        return baseFileDirectory;
+    public List<Path> getSearchFilePaths() {
+        return searchFilePaths;
     }
 
     public Level getLogLevel() {
