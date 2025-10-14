@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+find_git_root() {
+  local dir="$PWD"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -d "$dir/.git" ]]; then
+      echo "$dir"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  echo "No .git directory found in any parent directory." >&2
+  return 1
+}
+
+PROJECT_ROOT=$(find_git_root)
+
+# Be sure to generate only for the current platform
+export JRELEASER_PROJECT_VERSION
+JRELEASER_PROJECT_VERSION=$(yq --exit-status '.project.version' "$PROJECT_ROOT/pom.xml")
+
+# Jreleaser version
+JRELEASER_VERSION=$(yq --exit-status '.project.properties."jreleaser.version"' "$PROJECT_ROOT/pom.xml")
+
+export JRELEASER_GITHUB_TOKEN
+JRELEASER_GITHUB_TOKEN="$(pass github/docker-registry)"
+# for the docker upload
+export JRELEASER_DOCKER_GHCR_IO_PASSWORD="$GITHUB_TOKEN"
+# Same as maven (Default to out)
+export JRELEASER_OUTPUT_DIRECTORY=target
+# search the .git directory recursively
+export JRELEASER_GIT_ROOT_SEARCH=true
+# execution directory so that we can execute it from anywhere
+# PWD is direnv directory
+export JRELEASER_BASEDIR=$PWD
+if [ ! -f "$JRELEASER_BASEDIR/jreleaser.yml" ]; then
+  echo "Bad base dir for Jreleaser"
+  return 1
+fi
+
+
+"$HOME/.sdkman/candidates/jreleaser/${JRELEASER_VERSION}/bin/jreleaser" "$@"

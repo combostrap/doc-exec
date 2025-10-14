@@ -134,7 +134,7 @@ public class DocExecutorInstanceTest {
         System.out.println(docTestRun);
         Assertions.assertEquals(2, docTestRun.size());
         Assertions.assertEquals(Paths.get("src/test/resources/docFile/file.txt"), docTestRun.get(0));
-        Assertions.assertEquals(Paths.get("src/test/resources/docFile/README.md"), docTestRun.get(0));
+        Assertions.assertEquals(Paths.get("src/test/resources/docFile/README.md"), docTestRun.get(1));
 
     }
 }

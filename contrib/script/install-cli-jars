@@ -6,7 +6,7 @@
 set -TCEeuo pipefail
 
 # Default values
-CLI_NAME=${1-"doc-exec"}
+CLI_NAME=${1-${PROJECT_NAME}}
 CLI_HOME=${CLI_HOME:-/opt/${CLI_NAME}}
 TARGET_DIR="${CLI_HOME}/jars"
 

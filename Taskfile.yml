@@ -39,3 +39,8 @@ tasks:
     cmds:
       - |
         {{.TASKFILE_DIR}}/contrib/script/install-cli-jars
+  # Release the actual version
+  release:
+    cmds:
+      - |
+        {{.TASKFILE_DIR}}/contrib/script/release
