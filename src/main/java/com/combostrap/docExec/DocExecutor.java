@@ -18,9 +18,9 @@ public class DocExecutor {
 
 
     private final DocSecurityManager securityManager;
-    public boolean captureStdErr = true;
+    private boolean captureStdErr = true;
 
-    DocCache docCache;
+    private DocCache docCache;
     private final Map<String, Class<?>> shellCommandMainClassMap = new HashMap<>();
     // The fully qualified path of the command
     // to be sure that we don't hit another command
@@ -290,5 +290,13 @@ public class DocExecutor {
 
     public Path getSearchDocPath() {
         return this.searchDocPath;
+    }
+
+    public boolean getCaptureStdErr() {
+        return captureStdErr;
+    }
+
+    public List<String> getDocExtensions() {
+        return List.of("txt","md");
     }
 }

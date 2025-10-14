@@ -6,6 +6,7 @@ environment:
     jdkPathPrefix: '/tmp/jdks/temurin'
     jdkVersion: '17.0.16'
     jdkDirectoryName: 'jdk-17.0.16+8'
+    # The jars are copied via maven with the release profile in the deps directory
     depsPrefix: 'target/deps'
 
 # https://jreleaser.org/guide/latest/reference/project.html
@@ -23,7 +24,7 @@ project:
   vendor: Combostrap
   snapshot:
     pattern: .*-SNAPSHOT
-    # This is the default version value but if you search for, you get it
+    # This is the default version value (used in bash script to get the final assembly name)
     label: early-access
   tags:
     - documentation
@@ -37,7 +38,7 @@ project:
     java:
       groupId: com.combostrap
       artifactId: combostrap-doc-exec
-      mainClass: com.combostrap.docExec.DocExecCli
+      mainClass: com.combostrap.docExec.DocExecutorCli
       version: '16.0.2'
   stereotype: CLI
 
@@ -95,7 +96,7 @@ release:
       replacers:
         - search: '\[chore\] '
 
-# Execute with jreleaser assemble
+# Execute it with jreleaser assemble
 assemble:
   # https://jreleaser.org/guide/latest/reference/assemble/jlink.html
   jlink:
@@ -125,6 +126,7 @@ assemble:
       mainJar:
         path: 'target/combostrap-doc-exec-{{projectVersion}}.jar'
       jars:
+        # The jars are copied via maven with the release profile in the deps directory
         - pattern: '{{depsPrefix}}/*.jar'
       swid:
         tagRef: swid-tag

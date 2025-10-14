@@ -318,6 +318,15 @@ public class DocExecutorInstance {
 
     public List<DocExecutorResult> run(List<String> globPaths) {
 
+        List<Path> totalPaths = getPathsFromGlobs(globPaths);
+        return run(totalPaths.toArray(new Path[0]));
+    }
+
+    protected List<Path> getPathsFromGlobs(String... globPaths) {
+        return getPathsFromGlobs(Arrays.asList(globPaths));
+    }
+
+    protected List<Path> getPathsFromGlobs(List<String> globPaths) {
         DocLog.LOGGER.info("Processing " + globPaths.size() + " glob path(s)...");
         List<Path> totalPaths = new ArrayList<>();
         for (String globPattern : globPaths) {
@@ -325,7 +334,7 @@ public class DocExecutorInstance {
             if (globPattern.endsWith(Glob.DOUBLE_STAR)) {
                 globPattern += "/*";
             }
-            String docFileExtension = ".{txt,md}";
+            String docFileExtension = ".{" + String.join(",", docExecutor.getDocExtensions()) + "}";
             if (!globPattern.contains(".")) {
                 globPattern = globPattern + docFileExtension;
             }
@@ -341,6 +350,10 @@ public class DocExecutorInstance {
             }
             totalPaths.addAll(paths);
         }
-        return run(totalPaths.toArray(new Path[0]));
+        return totalPaths;
+    }
+
+    public DocExecutorUnit getDocExecutorUnit() {
+        return DocExecutorUnit.create(docExecutor);
     }
 }

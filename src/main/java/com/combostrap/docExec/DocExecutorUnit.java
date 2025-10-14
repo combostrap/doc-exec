@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 /**
- * Execute a code block found in a doc
+ * Execute a unit (code block, file block) found in a doc
  * <p>
  * A {@link DocExecutorUnit} contains the environment variable and function to run a {@link DocUnit}
  */
@@ -136,7 +136,7 @@ public class DocExecutorUnit {
                 .command(cliCommand)
                 .environment(docUnit.getEnv())
                 .readOutput(true);
-              if (this.docExecutor.captureStdErr) {
+              if (this.docExecutor.getCaptureStdErr()) {
                 processExecutor.redirectError(System.out);
               }
               output.append(
@@ -281,7 +281,7 @@ public class DocExecutorUnit {
       final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
       PrintStream stream = new PrintStream(byteArrayOutputStream);
       System.setOut(stream);
-      if (this.docExecutor.captureStdErr) {
+      if (this.docExecutor.getCaptureStdErr()) {
         System.setErr(stream);
       }
       // Invoke

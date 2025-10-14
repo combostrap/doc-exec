@@ -872,15 +872,7 @@ public class Fs {
             stringNames = globPath.getNames();
         } else {
             startPath = currentPath;
-            for (String name : globPath.getNames()) {
-                if (name.equals(globPath.getParent())) {
-                    startPath = startPath.getParent();
-                } else {
-                    if (!name.equals(globPath.getName())) {
-                        stringNames.add(name);
-                    }
-                }
-            }
+            stringNames = globPath.getNames();
         }
 
         /**
