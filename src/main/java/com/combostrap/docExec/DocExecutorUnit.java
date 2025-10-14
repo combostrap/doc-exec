@@ -199,7 +199,7 @@ public class DocExecutorUnit {
 
             // Verification of the presence of the compilation tool archive
             ClassLoader classLoader = DocExecutorUnit.class.getClassLoader();
-            final String toolsJarFileName = "tools.jar";
+
             String javaHome = System.getProperty("java.home");
 
 
@@ -208,6 +208,7 @@ public class DocExecutorUnit {
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
             if (compiler == null) {
 
+                final String toolsJarFileName = "tools.jar";
                 Path toolsJarFilePath = Paths.get(javaHome, "lib", toolsJarFileName);
                 String message = "Unable to get the system Java Compiler. Are your running java with a JDK ?";
                 if (!Files.exists(toolsJarFilePath)) {
