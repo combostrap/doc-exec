@@ -223,15 +223,27 @@ public class DocExecutorCli implements Callable<Integer> {
     public static void main(String[] args) {
         CommandLine commandLine = new CommandLine(new DocExecutorCli())
                 .registerConverter(Level.class, new LogLevelConverter());
-        int exitCode;
-        try {
-            exitCode = commandLine.execute(args);
-        } catch (Exception e) {
-            exitCode = 1;
-            System.err.println("Error: " + e.getMessage());
-            //noinspection CallToPrintStackTrace
-            e.printStackTrace();
-        }
+
+        /**
+         * Picocli catch the exception by default
+         * We overwrite it here
+         */
+        commandLine.setExecutionExceptionHandler((ex, commandLine1, parseResult) -> {
+
+            /**
+             * Print the stack trace
+             * If we throw, we get the stack trace but before JUL messages output
+             * because it seems they are in another thread
+             */
+            Throwable throwable = ex;
+            if (ex instanceof DocFirstError) {
+                throwable = ex.getCause();
+            }
+            DocLog.LOGGER.log(Level.SEVERE, "Command execution failed", throwable);
+            return 1;
+        });
+
+        int exitCode = commandLine.execute(args);
         if (!JavaEnvs.isJUnitTest()) {
             System.exit(exitCode);
         }

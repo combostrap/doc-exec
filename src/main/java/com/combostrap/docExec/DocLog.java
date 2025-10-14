@@ -1,6 +1,9 @@
 package com.combostrap.docExec;
 
 
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.logging.*;
 
 public class DocLog {
@@ -36,31 +39,32 @@ public class DocLog {
             /**
              * {@link ConsoleHandler} sends to `std.err` and you can't modify it
              * You need to use a {@link StreamHandler}
+             * We use the same stderr for all level so that they are in the same buffer
              */
-            StreamHandler infoHandler = new StreamHandler(
-                    System.out,
+            PrintStream err = System.err;
+            StreamHandler docHandler = new StreamHandler(
+                    err,
                     new java.util.logging.Formatter() {
                         @Override
                         public String format(LogRecord record) {
-                            return record.getMessage() + "\n";
+
+                            String message = String.format("%-7s - %s%n",
+                                    record.getLevel(),
+                                    record.getMessage()
+                            );
+                            /**
+                             * Adding stack trace if any error
+                             */
+                            if (record.getThrown() != null) {
+                                StringWriter sw = new StringWriter();
+                                PrintWriter pw = new PrintWriter(sw);
+                                record.getThrown().printStackTrace(pw);
+                                message += sw + System.lineSeparator();
+                            }
+                            return message;
                         }
                     });
-            infoHandler.setLevel(Level.INFO);
-            logger.addHandler(infoHandler);
-            /**
-             * Handler for all other level
-             */
-            StreamHandler otherLevelHandler = new StreamHandler(
-                    System.err,
-                    new java.util.logging.Formatter() {
-                        @Override
-                        public String format(LogRecord record) {
-                            return record.getMessage() + "\n";
-                        }
-                    });
-            otherLevelHandler.setFilter(record -> record.getLevel() != Level.INFO);
-            otherLevelHandler.setLevel(Level.ALL);
-            logger.addHandler(otherLevelHandler);
+            logger.addHandler(docHandler);
         }
         return new DocLog();
     }

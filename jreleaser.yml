@@ -116,6 +116,8 @@ assemble:
         # jdk.crypto.ec is mandatory to avoid handshake_failure on http request
         # https://stackoverflow.com/questions/55439599/sslhandshakeexception-with-jlink-created-runtime
         - 'jdk.crypto.ec'
+        # Exception in thread "main" java.lang.NoClassDefFoundError: java/awt/Color
+        - 'java.desktop'
       targetJdks:
         - path: '{{jdkPathPrefix}}Linux/{{jdkDirectoryName}}'
           platform: 'linux-x86_64'

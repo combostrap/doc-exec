@@ -18,6 +18,7 @@ public class DocExecutorInstance {
     private final String eol = System.lineSeparator();
     private final DocLog log;
     private final DocExecutorUnit docExecutorUnit;
+    private ProgressDisplay progressDisplay;
 
     public DocExecutorInstance(DocExecutor docExecutor) {
         this.docExecutor = docExecutor;
@@ -39,12 +40,14 @@ public class DocExecutorInstance {
      */
     public List<DocExecutorResult> run(Path... paths) {
 
+        this.progressDisplay = new ProgressDisplay(paths.length, false);
+        List<DocExecutorResult> results = new ArrayList<>();
+
         DocCache docCache = docExecutor.getDocCache();
         if (docCache != null && docExecutor.getPurgeCache()) {
             docCache.purgeAll();
         }
 
-        List<DocExecutorResult> results = new ArrayList<>();
         for (Path path : paths) {
 
             /**
@@ -53,7 +56,7 @@ public class DocExecutorInstance {
              */
             Path resumeFrom = this.docExecutor.getResumeFromPath();
             if (resumeFrom != null && Sorts.naturalSortComparator(resumeFrom.toString(), path.toString()) > 0) {
-                this.log.infoSecondLevel("ResumeFrom is on. Skipping: " + path);
+                progressDisplay.addExecutionClosingStatus("ResumeFrom is on. Skipping: " + path);
                 continue;
             }
 
@@ -74,7 +77,7 @@ public class DocExecutorInstance {
                     String md5Cache = docCache.getMd5(childPath);
                     String md5 = Fs.getMd5(childPath);
                     if (md5.equals(md5Cache)) {
-                        this.log.infoSecondLevel("Cache is on and the file (" + childPath + ") has already been executed. Skipping the execution.");
+                        progressDisplay.addExecutionClosingStatus("Cache is on and the file (" + childPath + ") has already been executed. Skipping the execution.");
                         DocExecutorResult docExecutorResult =
                                 DocExecutorResult
                                         .get(childPath)
@@ -87,7 +90,7 @@ public class DocExecutorInstance {
                 /**
                  * Execution
                  */
-                this.log.infoSecondLevel("Executing the doc file (" + childPath + ")");
+                progressDisplay.addExecutionStatus("Executing the doc file (" + childPath + ")");
                 DocExecutorResult docExecutorResult;
                 try {
                     docExecutorResult = this.execute(childPath);
@@ -111,8 +114,10 @@ public class DocExecutorInstance {
                     throw new DocWarning("Warning were seen");
                 }
 
+                progressDisplay.addExecutionClosingStatus("Doc file (" + childPath + ") executed successfully");
             }
         }
+
         return results;
 
     }
@@ -190,7 +195,7 @@ public class DocExecutorInstance {
                     int start = docFileBlock.getLocationStart();
                     targetDoc.append(originalDoc, previousEnd, start);
 
-                    this.log.infoSecondLevel("Replacing the file block (" + DocLog.onOneLine(docFileBlock.getPath()) + ") from the file (" + docUnit.getPath() + ")");
+                    this.progressDisplay.addExecutionStatus("Replacing the file block (" + DocLog.onOneLine(docFileBlock.getPath()) + ") from the file (" + docUnit.getPath() + ")");
                     targetDoc
                             .append(eol)
                             .append(fileContent)
@@ -221,7 +226,7 @@ public class DocExecutorInstance {
                                 || (!cacheIsOn())
                                 || oneCodeBlockHasAlreadyRun
                 ) {
-                    this.log.infoSecondLevel("Running the code (" + DocLog.onOneLine(code) + ") from the file (" + docUnit.getPath() + ")");
+                    this.progressDisplay.addExecutionStatus("Running the code (" + DocLog.onOneLine(code) + ") from the file (" + docUnit.getPath() + ")");
                     try {
                         docExecutorResult.incrementCodeExecutionCounter();
                         result = docExecutorUnit.run(docUnit).trim();
@@ -230,14 +235,13 @@ public class DocExecutorInstance {
                     } catch (Exception e) {
                         docExecutorResult.addError();
 
-
                         if (docExecutor.doesStopAtFirstError()) {
-                            this.log.infoSecondLevel("Stop at first run. Throwing the error");
+                            this.progressDisplay.addExecutionStatus("Stop at first run. Throwing the error");
                             /**
                              * The message can be huge if the error adds a usage
                              * We don't add it in message
                              */
-                            throw new RuntimeException(STOP_AT_FIRST_ERROR, e);
+                            throw new DocFirstError(STOP_AT_FIRST_ERROR, e);
                         } else {
                             if (e.getClass().equals(NullPointerException.class)) {
                                 result = "null pointer exception";
@@ -248,7 +252,7 @@ public class DocExecutorInstance {
                         }
                     }
                 } else {
-                    this.log.infoSecondLevel("The run of the code (" + DocLog.onOneLine(code) + ") was skipped due to caching from the file (" + docUnit.getPath() + ")");
+                    this.progressDisplay.addExecutionClosingStatus("The run of the code (" + DocLog.onOneLine(code) + ") was skipped due to caching from the file (" + docUnit.getPath() + ")");
                     assert cachedDocUnit != null;
                     result = cachedDocUnit.getConsole();
                 }
