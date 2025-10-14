@@ -78,4 +78,13 @@ public class DocExecutorResult {
         this.cacheHit = b;
         return this;
     }
+
+    public Path getPath() {
+        return this.path;
+    }
+
+    @Override
+    public String toString() {
+        return path.toString();
+    }
 }

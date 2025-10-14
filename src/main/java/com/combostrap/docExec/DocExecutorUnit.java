@@ -29,22 +29,24 @@ public class DocExecutorUnit {
 
 
   private final DocExecutor docExecutor;
-
+  private final DocLog log;
 
   /**
    * The directory where the compile class are saved
    */
   private final Path outputDirClass;
 
+
   /**
-   * Get a {@link DocExecutorUnit} with the {@link #create(DocExecutor)} function please
+   * Get a {@link DocExecutorUnit} with the {@link #create(DocExecutorInstance)} function please
    *
-   * @param docExecutor - the context object
+   * @param docExecutorInstance - the context object
    */
-  private DocExecutorUnit(DocExecutor docExecutor) {
+  private DocExecutorUnit(DocExecutorInstance docExecutorInstance) {
 
     outputDirClass = Paths.get(System.getProperty("java.io.tmpdir"), "docTestClass").normalize().toAbsolutePath();
-    this.docExecutor = docExecutor;
+    this.docExecutor = docExecutorInstance.getDocExecutor();
+    this.log = docExecutorInstance.getLog();
     try {
       Files.createDirectories(outputDirClass);// Safe if the dir already exist
     } catch (IOException e) {
@@ -53,11 +55,11 @@ public class DocExecutorUnit {
   }
 
   /**
-   * @param docExecutor - the context object
+   * @param docExecutorInstance - the context object
    * @return - a docTestRunner that contains the environment variable and function to run a test
    */
-  protected static DocExecutorUnit create(DocExecutor docExecutor) {
-    return new DocExecutorUnit(docExecutor);
+  protected static DocExecutorUnit create(DocExecutorInstance docExecutorInstance) {
+    return new DocExecutorUnit(docExecutorInstance);
   }
 
 
@@ -200,8 +202,9 @@ public class DocExecutorUnit {
       final String toolsJarFileName = "tools.jar";
       String javaHome = System.getProperty("java.home");
       Path toolsJarFilePath = Paths.get(javaHome, "lib", toolsJarFileName);
+
       if (!Files.exists(toolsJarFilePath)) {
-        DocLog.LOGGER.fine("The tools jar file (" + toolsJarFileName + ") could not be found at (" + toolsJarFilePath + ") but it may still work.");
+        log.fine("The tools jar file (" + toolsJarFileName + ") could not be found at (" + toolsJarFilePath + ") but it may still work.");
       }
 
       // The compile part
@@ -210,8 +213,8 @@ public class DocExecutorUnit {
       if (compiler == null) {
 
         final String message = "Unable to get the system Java Compiler. Are your running java with a JDK ?";
-        DocLog.LOGGER.severe(message);
-        DocLog.LOGGER.severe("Java Home: " + javaHome);
+        log.severe(message);
+        log.severe("Java Home: " + javaHome);
         throw new RuntimeException(message);
 
       }
@@ -228,7 +231,7 @@ public class DocExecutorUnit {
 
       // Add class path to get org.zeroturnaround.exec
       String currentClassPath = System.getProperty("java.class.path");
-      DocLog.LOGGER.fine("Using classpath: " + currentClassPath);
+      log.fine("Using classpath: " + currentClassPath);
       if (currentClassPath != null && !currentClassPath.isEmpty()) {
         options.add("-classpath");
         options.add(currentClassPath);
@@ -256,7 +259,7 @@ public class DocExecutorUnit {
           diagnostic.getSource() +
           "\nError: " +
           diagnostic.getMessage(null);
-        DocLog.LOGGER.fine(msg);
+        log.fine(msg);
 
         throw new RuntimeException(msg + "\nCode:\n" + code);
 
@@ -264,7 +267,7 @@ public class DocExecutorUnit {
 
 
       // Now that the class was created, we will load it and run it
-      DocLog.LOGGER.fine("Trying to load from " + outputDirClass);
+      log.fine("Trying to load from " + outputDirClass);
       Class<?> buildClass;
       try (URLClassLoader urlClassLoader = new URLClassLoader(
         new URL[]{outputDirClass.toUri().toURL()},
@@ -308,12 +311,10 @@ public class DocExecutorUnit {
           }
           throw new RuntimeException("Error has been seen.\nCode:\n" + javaCode + "Console Output: \n" + consoleOutput, e);
         }
-        DocLog.LOGGER.info("Code execution with System exit with 0 has been prevented");
+        log.infoSecondLevel("Code execution with System exit with 0 has been prevented");
 
       } finally {
 
-        // Reset the log level
-        DocLog.LOGGER.setLevel(Level.INFO);
         // Get the output
         System.out.flush(); // Into the byteArray
         System.err.flush(); // Into the byteArray

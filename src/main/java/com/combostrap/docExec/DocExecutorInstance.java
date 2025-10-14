@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class DocExecutorInstance {
@@ -17,9 +16,19 @@ public class DocExecutorInstance {
     public static final String STOP_AT_FIRST_ERROR = "Stop at first error";
     private final DocExecutor docExecutor;
     private final String eol = System.lineSeparator();
+    private final DocLog log;
+    private final DocExecutorUnit docExecutorUnit;
 
     public DocExecutorInstance(DocExecutor docExecutor) {
         this.docExecutor = docExecutor;
+        /**
+         * Log Init
+         */
+        this.log = DocLog.build(docExecutor);
+        /**
+         * The unit runner
+         */
+        this.docExecutorUnit = DocExecutorUnit.create(this);
     }
 
     /**
@@ -30,10 +39,6 @@ public class DocExecutorInstance {
      */
     public List<DocExecutorResult> run(Path... paths) {
 
-        String packageName = DocExecutorInstance.class.getPackage().getName();
-        Logger logger = Logger.getLogger(packageName);
-        logger.setLevel(docExecutor.getLogLevel());
-
         DocCache docCache = docExecutor.getDocCache();
         if (docCache != null && docExecutor.getPurgeCache()) {
             docCache.purgeAll();
@@ -42,9 +47,19 @@ public class DocExecutorInstance {
         List<DocExecutorResult> results = new ArrayList<>();
         for (Path path : paths) {
 
+            /**
+             * We skip at execution, not at selection so that
+             * we get the messages in order of execution
+             */
+            Path resumeFrom = this.docExecutor.getResumeFromPath();
+            if (resumeFrom != null && Sorts.naturalSortComparator(resumeFrom.toString(), path.toString()) > 0) {
+                this.log.infoSecondLevel("ResumeFrom is on. Skipping: " + path);
+                continue;
+            }
+
             if (!Files.exists(path)) {
                 String msg = "The path (" + path.toAbsolutePath() + ") does not exist";
-                DocLog.LOGGER.severe(docExecutor.getName() + " " + msg);
+                this.log.severe(msg);
                 throw new RuntimeException(msg);
             }
 
@@ -59,7 +74,7 @@ public class DocExecutorInstance {
                     String md5Cache = docCache.getMd5(childPath);
                     String md5 = Fs.getMd5(childPath);
                     if (md5.equals(md5Cache)) {
-                        DocLog.LOGGER.info(docExecutor.getName() + " - Cache is on and the file (" + childPath + ") has already been executed. Skipping the execution");
+                        this.log.infoSecondLevel("Cache is on and the file (" + childPath + ") has already been executed. Skipping the execution.");
                         DocExecutorResult docExecutorResult =
                                 DocExecutorResult
                                         .get(childPath)
@@ -72,7 +87,7 @@ public class DocExecutorInstance {
                 /**
                  * Execution
                  */
-                DocLog.LOGGER.info(docExecutor.getName() + " - Executing the doc file (" + childPath + ")");
+                this.log.infoSecondLevel("Executing the doc file (" + childPath + ")");
                 DocExecutorResult docExecutorResult;
                 try {
                     docExecutorResult = this.execute(childPath);
@@ -118,7 +133,7 @@ public class DocExecutorInstance {
         StringBuilder targetDoc = new StringBuilder();
 
         // A code executor
-        DocExecutorUnit docExecutorUnit = DocExecutorUnit.create(docExecutor);
+        DocExecutorUnit docExecutorUnit = DocExecutorUnit.create(this);
 
         List<DocUnit> cachedDocUnits = new ArrayList<>();
         if (docExecutor.getDocCache() != null) {
@@ -175,7 +190,7 @@ public class DocExecutorInstance {
                     int start = docFileBlock.getLocationStart();
                     targetDoc.append(originalDoc, previousEnd, start);
 
-                    DocLog.LOGGER.info(docExecutor.getName() + " - Replacing the file block (" + DocLog.onOneLine(docFileBlock.getPath()) + ") from the file (" + docUnit.getPath() + ")");
+                    this.log.infoSecondLevel("Replacing the file block (" + DocLog.onOneLine(docFileBlock.getPath()) + ") from the file (" + docUnit.getPath() + ")");
                     targetDoc
                             .append(eol)
                             .append(fileContent)
@@ -206,18 +221,18 @@ public class DocExecutorInstance {
                                 || (!cacheIsOn())
                                 || oneCodeBlockHasAlreadyRun
                 ) {
-                    DocLog.LOGGER.info(docExecutor.getName() + " - Running the code (" + DocLog.onOneLine(code) + ") from the file (" + docUnit.getPath() + ")");
+                    this.log.infoSecondLevel("Running the code (" + DocLog.onOneLine(code) + ") from the file (" + docUnit.getPath() + ")");
                     try {
                         docExecutorResult.incrementCodeExecutionCounter();
                         result = docExecutorUnit.run(docUnit).trim();
-                        DocLog.LOGGER.fine(docExecutor.getName() + " - Code executed, no error");
+                        this.log.infoSecondLevel("Code executed, no error");
                         oneCodeBlockHasAlreadyRun = true;
                     } catch (Exception e) {
                         docExecutorResult.addError();
 
 
                         if (docExecutor.doesStopAtFirstError()) {
-                            DocLog.LOGGER.fine(docExecutor.getName() + " - Stop at first run. Throwing the error");
+                            this.log.infoSecondLevel("Stop at first run. Throwing the error");
                             /**
                              * The message can be huge if the error adds a usage
                              * We don't add it in message
@@ -229,11 +244,11 @@ public class DocExecutorInstance {
                             } else {
                                 result = e.getMessage();
                             }
-                            DocLog.LOGGER.severe(docExecutor.getName() + " - Error during execute: " + result);
+                            this.log.severe("Error during execute: " + result);
                         }
                     }
                 } else {
-                    DocLog.LOGGER.info(docExecutor.getName() + " - The run of the code (" + DocLog.onOneLine(code) + ") was skipped due to caching from the file (" + docUnit.getPath() + ")");
+                    this.log.infoSecondLevel("The run of the code (" + DocLog.onOneLine(code) + ") was skipped due to caching from the file (" + docUnit.getPath() + ")");
                     assert cachedDocUnit != null;
                     result = cachedDocUnit.getConsole();
                 }
@@ -327,10 +342,10 @@ public class DocExecutorInstance {
     }
 
     protected List<Path> getPathsFromGlobs(List<String> globPaths) {
-        DocLog.LOGGER.info("Processing " + globPaths.size() + " glob path(s)...");
+        this.log.infoFirstLevel("Processing " + globPaths.size() + " glob path(s)...");
         List<Path> totalPaths = new ArrayList<>();
         for (String globPattern : globPaths) {
-            DocLog.LOGGER.info("Processing: " + globPattern);
+            this.log.infoFirstLevel("Processing: " + globPattern);
             if (globPattern.endsWith(Glob.DOUBLE_STAR)) {
                 globPattern += "/*";
             }
@@ -344,20 +359,9 @@ public class DocExecutorInstance {
                     // Natural Order
                     // [1-one, 2-two, 3-three, 10-ten, 20-twenty, 100-hundred]
                     .sorted((x, y) -> Sorts.naturalSortComparator(x.toString(), y.toString()))
-                    .filter(path -> {
-                        Path resumeFrom = this.docExecutor.getResumeFromPath();
-                        if (resumeFrom == null) {
-                            return true;
-                        }
-                        if (Sorts.naturalSortComparator(resumeFrom.toString(), path.toString()) > 0) {
-                            DocLog.LOGGER.info("Skipping : " + path);
-                            return false;
-                        }
-                        return true;
-                    })
                     .collect(Collectors.toList());
             if (paths.isEmpty()) {
-                throw new RuntimeException("No docs selected for the glob : " + globPattern);
+                throw new RuntimeException("No docs selected for the glob: " + globPattern);
             }
             totalPaths.addAll(paths);
         }
@@ -365,6 +369,14 @@ public class DocExecutorInstance {
     }
 
     public DocExecutorUnit getDocExecutorUnit() {
-        return DocExecutorUnit.create(docExecutor);
+        return this.docExecutorUnit;
+    }
+
+    public DocExecutor getDocExecutor() {
+        return this.docExecutor;
+    }
+
+    public DocLog getLog() {
+        return this.log;
     }
 }

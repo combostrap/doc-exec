@@ -154,7 +154,7 @@ public class DocExecutorInstanceTest {
         comparison = Paths.get("src/test/resources/docFile/file.txt").compareTo(Paths.get("src/test/resources/docFile/g"));
         Assertions.assertEquals(-1, comparison);
         comparison = Paths.get("src/test/resources/docFile/file.txt").compareTo(Paths.get("src/test/resources/docFile/R"));
-        Assertions.assertEquals(20, comparison,"file is greater than R");
+        Assertions.assertEquals(20, comparison, "file is greater than R");
         comparison = Sorts.naturalSortComparator(Paths.get("src/test/resources/docFile/file.txt"), Paths.get("src/test/resources/docFile/R"));
         Assertions.assertEquals(-12, comparison, "file is no more greater than R");
 
@@ -162,14 +162,14 @@ public class DocExecutorInstanceTest {
         /**
          * Run
          */
-        List<Path> docTestRun = DocExecutor.create("defaultRun")
+        List<DocExecutorResult> docTestRun = DocExecutor.create("defaultRun")
                 .setSearchDocPath(Paths.get("src/test/resources"))
                 .setResumeFrom("docFile/R")
                 .build()
-                .getPathsFromGlobs("docFile/*");
+                .run("docFile/*");
         System.out.println(docTestRun);
         Assertions.assertEquals(1, docTestRun.size());
-        Assertions.assertEquals(Paths.get("src/test/resources/docFile/README.md"), docTestRun.get(0));
+        Assertions.assertEquals(Paths.get("src/test/resources/docFile/README.md"), docTestRun.get(0).getPath());
 
     }
 }

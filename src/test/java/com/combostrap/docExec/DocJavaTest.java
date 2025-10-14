@@ -22,12 +22,13 @@ public class DocJavaTest {
                         "System.exit(0);")
                 .setConsoleContent(textToPrint);
 
-        DocExecutor docExec = DocExecutor.create("test");
+        DocExecutorUnit docExecUnit = DocExecutor.create("test")
+                .build()
+                .getDocExecutorUnit();
         // A runner
         boolean error = false;
         try {
-            DocExecutorUnit.create(docExec)
-                    .run(docUnit);
+            docExecUnit.run(docUnit);
         } catch (Exception e) {
             error = true;
         }
@@ -51,11 +52,11 @@ public class DocJavaTest {
                 .setCode("throw new RuntimeException(\"Bad\");")
                 .setConsoleContent(textToPrint);
 
-        DocExecutor docExec = DocExecutor.create("test");
+        DocExecutorUnit docExec = DocExecutor.create("test").build().getDocExecutorUnit();
 
         Assertions.assertThrows(
                 RuntimeException.class,
-                () -> DocExecutorUnit.create(docExec).run(docUnit)
+                () -> docExec.run(docUnit)
         );
 
 
