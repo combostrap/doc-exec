@@ -1,5 +1,6 @@
 package com.combostrap.docExec.util;
 
+import java.nio.file.Path;
 import java.util.Comparator;
 
 public class Sorts {
@@ -69,6 +70,10 @@ public class Sorts {
 
   public static int naturalSortComparator(String s, String s1) {
     return naturalSortComparator(s, s1, true);
+  }
+
+  public static int naturalSortComparator(Path path, Path path1) {
+    return naturalSortComparator(path.toAbsolutePath().toString(), path1.toAbsolutePath().toString());
   }
 
 }

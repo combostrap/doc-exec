@@ -344,6 +344,17 @@ public class DocExecutorInstance {
                     // Natural Order
                     // [1-one, 2-two, 3-three, 10-ten, 20-twenty, 100-hundred]
                     .sorted((x, y) -> Sorts.naturalSortComparator(x.toString(), y.toString()))
+                    .filter(path -> {
+                        Path resumeFrom = this.docExecutor.getResumeFromPath();
+                        if (resumeFrom == null) {
+                            return true;
+                        }
+                        if (Sorts.naturalSortComparator(resumeFrom.toString(), path.toString()) > 0) {
+                            DocLog.LOGGER.info("Skipping : " + path);
+                            return false;
+                        }
+                        return true;
+                    })
                     .collect(Collectors.toList());
             if (paths.isEmpty()) {
                 throw new RuntimeException("No docs selected for the glob : " + globPattern);

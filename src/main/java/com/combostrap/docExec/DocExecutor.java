@@ -31,6 +31,7 @@ public class DocExecutor {
     private boolean enableCache = true;
     private boolean purgeCache = false;
     private Path searchDocPath = Paths.get("");
+    private String resumeFrom = null;
 
     /**
      * @param overwrite If set to true, the console and the file node will be overwritten
@@ -298,5 +299,20 @@ public class DocExecutor {
 
     public List<String> getDocExtensions() {
         return List.of("txt","md");
+    }
+
+    public Path getResumeFromPath() {
+        if(this.resumeFrom==null || this.resumeFrom.isBlank()) {
+            return null;
+        }
+        if(this.searchDocPath==null ) {
+            return Paths.get(this.resumeFrom);
+        }
+        return this.searchDocPath.resolve(this.resumeFrom);
+    }
+
+    public DocExecutor setResumeFrom(String resumeFrom) {
+        this.resumeFrom = resumeFrom;
+        return this;
     }
 }

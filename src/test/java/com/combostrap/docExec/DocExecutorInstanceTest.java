@@ -2,6 +2,7 @@ package com.combostrap.docExec;
 
 
 import com.combostrap.docExec.util.Fs;
+import com.combostrap.docExec.util.Sorts;
 import com.combostrap.docExec.util.Strings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -13,8 +14,6 @@ import java.nio.file.Paths;
 import java.util.List;
 
 public class DocExecutorInstanceTest {
-
-
 
 
     /**
@@ -135,6 +134,42 @@ public class DocExecutorInstanceTest {
         Assertions.assertEquals(2, docTestRun.size());
         Assertions.assertEquals(Paths.get("src/test/resources/docFile/file.txt"), docTestRun.get(0));
         Assertions.assertEquals(Paths.get("src/test/resources/docFile/README.md"), docTestRun.get(1));
+
+    }
+
+    /**
+     * Test the selection of files
+     */
+    @Test
+    void selectDocsViaGlobsWithResumeFromSkip() {
+
+        /**
+         * By default, the path comparison is not good
+         * Demo, we use the sort natural then
+         */
+        int comparison = Paths.get("src/test/resources/docFile/file.txt").compareTo(Paths.get("src/test/resources/docFile/file.txt"));
+        Assertions.assertEquals(0, comparison);
+        comparison = Paths.get("src/test/resources/docFile/file.txt").compareTo(Paths.get("src/test/resources/docFile/gile.txt"));
+        Assertions.assertEquals(-1, comparison);
+        comparison = Paths.get("src/test/resources/docFile/file.txt").compareTo(Paths.get("src/test/resources/docFile/g"));
+        Assertions.assertEquals(-1, comparison);
+        comparison = Paths.get("src/test/resources/docFile/file.txt").compareTo(Paths.get("src/test/resources/docFile/R"));
+        Assertions.assertEquals(20, comparison,"file is greater than R");
+        comparison = Sorts.naturalSortComparator(Paths.get("src/test/resources/docFile/file.txt"), Paths.get("src/test/resources/docFile/R"));
+        Assertions.assertEquals(-12, comparison, "file is no more greater than R");
+
+
+        /**
+         * Run
+         */
+        List<Path> docTestRun = DocExecutor.create("defaultRun")
+                .setSearchDocPath(Paths.get("src/test/resources"))
+                .setResumeFrom("docFile/R")
+                .build()
+                .getPathsFromGlobs("docFile/*");
+        System.out.println(docTestRun);
+        Assertions.assertEquals(1, docTestRun.size());
+        Assertions.assertEquals(Paths.get("src/test/resources/docFile/README.md"), docTestRun.get(0));
 
     }
 }
