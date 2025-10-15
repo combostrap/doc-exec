@@ -95,11 +95,13 @@ public class DocExecutorInstanceTest {
         final Path rootFile = Paths.get("./src/test/resources");
         Path docToRun = Paths.get("./src/test/resources/docTest/overwriteSecond.txt");
         String before = Fs.toString(docToRun);
-        DocExecutorResult docTestRun = DocExecutor.create("defaultRun")
+        DocExecutorInstance docExecutorInstance = DocExecutor.create("defaultRun")
                 .setEnableCache(false)
                 .setShellCommandExecuteViaMainClass("echo", DocCommandEcho.class)
                 .setSearchFilePaths(rootFile)
-                .build()
+                .build();
+        Assertions.assertEquals(false, docExecutorInstance.getDocExecutor().getIsDryRun(), "We overwrite");
+        DocExecutorResult docTestRun = docExecutorInstance
                 .run(docToRun)
                 .get(0);
         Assertions.assertEquals(0, docTestRun.getErrors(), "No Errors were seen");

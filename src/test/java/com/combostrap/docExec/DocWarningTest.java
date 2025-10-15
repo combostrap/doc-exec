@@ -22,6 +22,8 @@ public class DocWarningTest {
 
         Assertions.assertThrows(DocWarning.class, () -> DocExecutor.create("test")
                 .setContentShrinkWarning(true)
+                // don't overwrite otherwise if we commit the file, the next time we get a success
+                .setDryRun(true)
                 .setEnableCache(false)
                 .build()
                 .run(path)

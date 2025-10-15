@@ -2,30 +2,39 @@
 
 <unit>
 <file txt docFile/file.txt>
-This node should be replaced by the content of the file
+File content of the file file.txt
+
 </file>
 <code dos>
 cat ./src/test/resources/docFile/file.txt
 </code>
 <console>
-
+File content of the file file.txt
 </console>
 </unit>
 
 <unit>
 <file yaml docFile/file.yml>
-This node should be replaced by the content of the file
+---
+placeholder:
+  - Placeholder
+
 </file>
 <code dos>
 cat ./src/test/resources/docFile/file.yml
 </code>
 <console>
-
+---
+placeholder:
+  - Placeholder
 </console>
 </unit>
 
 <unit>
 <file yaml docFile/file.yml>
-This node should be replaced by the content of the file even without code
+---
+placeholder:
+  - Placeholder
+
 </file>
 </unit>

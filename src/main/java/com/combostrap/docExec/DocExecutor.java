@@ -33,11 +33,11 @@ public class DocExecutor {
 
 
     /**
-     * @param overwrite If set to true, the console and the file node will be overwritten
+     * @param dryRun If set to true, the console and the file node will not be overwritten
      * @return the object for chaining
      */
-    public DocExecutor setOverwrite(boolean overwrite) {
-        this.overwrite = overwrite;
+    public DocExecutor setDryRun(boolean dryRun) {
+        this.isDryRun = dryRun;
         return this;
     }
 
@@ -50,7 +50,7 @@ public class DocExecutor {
         return this;
     }
 
-    private boolean overwrite = false;
+    private boolean isDryRun = false;
 
 
     /**
@@ -258,8 +258,8 @@ public class DocExecutor {
         return docCache;
     }
 
-    public boolean isOverwrite() {
-        return overwrite;
+    public boolean getIsDryRun() {
+        return isDryRun;
     }
 
     public List<Path> getSearchFilePaths() {
@@ -314,4 +314,6 @@ public class DocExecutor {
         this.resumeFrom = resumeFrom;
         return this;
     }
+
+
 }

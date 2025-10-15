@@ -28,19 +28,19 @@ public class DocExecutorCli implements Callable<Integer> {
     private String name;
 
     @CommandLine.Option(
-            names = {"--no-overwrite-docs"},
-            // default value when no flag is present
-            // because the flag is a negated form, the value is negated if present
+            names = {"--dry-run"},
+            // default value is when no flag is present
+            // if the flag is in a negated form (no), the value is negated if present
             // https://github.com/remkop/picocli/issues/813#issuecomment-532423733
-            defaultValue = "true",
+            defaultValue = "false",
             description = "Do not overwrite the documentation files (no result in the console, no inline file included)"
     )
-    private boolean overwrite = true;
+    private boolean dryRun = true;
 
     @CommandLine.Option(
             names = {"--purge-cache"},
             // default value when no flag is present
-            // because the flag is a negated form, the value is negated if present
+            // if the flag is in a negated form (no), the value is negated if present
             // https://github.com/remkop/picocli/issues/813#issuecomment-532423733
             defaultValue = "false",
             description = "Do not overwrite the documentation files (no result in the console, no inline file included)"
@@ -49,6 +49,9 @@ public class DocExecutorCli implements Callable<Integer> {
 
     @CommandLine.Option(
             names = {"--no-capture-stderr"},
+            // default value when no flag is present
+            // if the flag is in a negated form (no), the value is negated if present
+            // https://github.com/remkop/picocli/issues/813#issuecomment-532423733
             defaultValue = "true",
             description = "Do not capture the standard error stream of the code executed")
     private boolean captureStdErr = true;
@@ -110,7 +113,7 @@ public class DocExecutorCli implements Callable<Integer> {
 
         // Create DocExecutor with configured options
         DocExecutor executor = DocExecutor.create(name)
-                .setOverwrite(docExecutorCli.isOverwrite())
+                .setDryRun(docExecutorCli.isDryRun())
                 .setCaptureStdErr(docExecutorCli.isCaptureStdErr())
                 .setEnableCache(docExecutorCli.isEnableCache())
                 .setStopRunAtFirstError(docExecutorCli.isStopRunAtFirstError())
@@ -160,8 +163,8 @@ public class DocExecutorCli implements Callable<Integer> {
         return name;
     }
 
-    public boolean isOverwrite() {
-        return overwrite;
+    public boolean isDryRun() {
+        return dryRun;
     }
 
     public boolean isPurgeCache() {

@@ -98,7 +98,7 @@ public class DocExecutorInstance {
                     throw new RuntimeException(e);
                 }
                 results.add(docExecutorResult);
-                if (docExecutor.isOverwrite()) {
+                if (!docExecutor.getIsDryRun()) {
                     // Overwrite the new doc
                     Fs.toFile(docExecutorResult.getNewDoc(), childPath);
                 }
@@ -230,7 +230,7 @@ public class DocExecutorInstance {
                     try {
                         docExecutorResult.incrementCodeExecutionCounter();
                         result = docExecutorUnit.run(docUnit).trim();
-                        this.log.infoSecondLevel("Code executed, no error");
+                        this.log.fine("Code executed, no error");
                         oneCodeBlockHasAlreadyRun = true;
                     } catch (Exception e) {
                         docExecutorResult.addError();
@@ -383,4 +383,5 @@ public class DocExecutorInstance {
     public DocLog getLog() {
         return this.log;
     }
+
 }
