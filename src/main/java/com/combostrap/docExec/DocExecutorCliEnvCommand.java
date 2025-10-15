@@ -1,12 +1,17 @@
 package com.combostrap.docExec;
 
+import com.combostrap.docExec.jackson.LogLevelSerializer;
+import com.combostrap.docExec.jackson.PathSerializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import picocli.CommandLine;
 
+import java.nio.file.Path;
 import java.util.concurrent.Callable;
+import java.util.logging.Level;
 
 @CommandLine.Command(
         name = "env",
@@ -37,6 +42,11 @@ public class DocExecutorCliEnvCommand implements Callable<Integer> {
         // Create a YAML mapper
         YAMLMapper yamlMapper = new YAMLMapper(yamlFactory);
 
+        // Serializer
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(Level.class, new LogLevelSerializer());
+        module.addSerializer(Path.class, new PathSerializer());
+        yamlMapper.registerModule(module);
 
         // Convert to YAML string
         String yamlString;
