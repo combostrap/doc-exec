@@ -27,7 +27,7 @@ import java.util.logging.Level;
 )
 public class DocExecutorCli implements Callable<Integer> {
 
-    @CommandLine.Option(names = {"-n", "--name"}, description = "Execution name")
+    @CommandLine.Option(names = {"-n", "--doc-name"}, description = "The name (used to determine the cache and results store), default to the name of the doc path directory")
     private String name;
 
     @CommandLine.Option(
@@ -68,15 +68,18 @@ public class DocExecutorCli implements Callable<Integer> {
     )
     private boolean enableCache = true;
 
-    @CommandLine.Option(names = {"--no-stop-at-first-error"},
+    @CommandLine.Option(names = {"--no-stop"},
             defaultValue = "true",
-            description = "Do not stop the execution at the first error")
+            description = "Do not stop the execution at the first error or warning")
     private boolean stopRunAtFirstError = true;
 
-    @CommandLine.Option(names = {"-pf", "--paths-inline-file"}, description = "Set a list of directories where to search for inline files (Files inlined in the doc)", defaultValue = "")
+    @CommandLine.Option(names = {"-fp", "--file-path"}, description = "One or more directories where to search for inline files (embedded in the doc)", defaultValue = "")
     private List<Path> searchInlineFilePaths = List.of(Paths.get(""));
 
-    @CommandLine.Option(names = {"--path-doc", "-pd"}, description = "A directory where to search for the documentation files if the glob path is relative", defaultValue = ".")
+    @CommandLine.Option(
+            names = {"--doc-path", "-dp"},
+            description = "A directory where to search for the documentation files if the glob path is relative",
+            defaultValue = "")
     private Path searchDocPath = Paths.get("");
 
     @CommandLine.Option(
@@ -125,7 +128,7 @@ public class DocExecutorCli implements Callable<Integer> {
                 .setDryRun(docExecutorCli.isDryRun())
                 .setCaptureStdErr(docExecutorCli.isCaptureStdErr())
                 .setEnableCache(docExecutorCli.isEnableCache())
-                .setStopRunAtFirstError(docExecutorCli.isStopRunAtFirstError())
+                .setStopRunAtFirstErrorOrWarning(docExecutorCli.isStopRunAtFirstError())
                 .setSearchFilePaths(docExecutorCli.getSearchInlineFilePaths())
                 .setSearchDocPath(docExecutorCli.getSearchDocPath())
                 .setLogLevel(docExecutorCli.getLogLevel())

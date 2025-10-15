@@ -171,12 +171,18 @@ public class DocExecutorInstanceTest {
         List<DocExecutorResultDocExecution> docTestRun = DocExecutor.create("defaultRun")
                 .setSearchDocPath(Paths.get("src/test/resources"))
                 .setResumeFrom("docFile/R")
+                .setEnableCache(false)
                 .build()
                 .run("docFile/*")
                 .getDocExecutionResults();
         System.out.println(docTestRun);
-        Assertions.assertEquals(1, docTestRun.size());
-        Assertions.assertEquals(Paths.get("docFile/README.md"), docTestRun.get(0).getPath());
+        Assertions.assertEquals(2, docTestRun.size());
+        DocExecutorResultDocExecution firstRun = docTestRun.get(0);
+        Assertions.assertEquals(Paths.get("docFile/file.txt"), firstRun.getPath());
+        Assertions.assertTrue(firstRun.wasSkipped());
+        DocExecutorResultDocExecution secondRun = docTestRun.get(1);
+        Assertions.assertEquals(Paths.get("docFile/README.md"), secondRun.getPath());
+        Assertions.assertEquals(0, secondRun.getExitStatus());
 
     }
 }

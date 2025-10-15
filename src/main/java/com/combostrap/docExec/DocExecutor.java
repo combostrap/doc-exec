@@ -105,10 +105,10 @@ public class DocExecutor {
     /**
      * Do we stop at the first error
      */
-    private boolean stopRunAtFirstError = true;
+    private boolean stopRunAtFirstErrorOrWarning = true;
 
-    public DocExecutor setStopRunAtFirstError(boolean stopRunAtFirstError) {
-        this.stopRunAtFirstError = stopRunAtFirstError;
+    public DocExecutor setStopRunAtFirstErrorOrWarning(boolean stopRunAtFirstErrorOrWarning) {
+        this.stopRunAtFirstErrorOrWarning = stopRunAtFirstErrorOrWarning;
         return this;
     }
 
@@ -184,7 +184,7 @@ public class DocExecutor {
     }
 
     public boolean doesStopAtFirstError() {
-        return this.stopRunAtFirstError;
+        return this.stopRunAtFirstErrorOrWarning;
     }
 
     /**
@@ -313,5 +313,9 @@ public class DocExecutor {
 
     public boolean getIsCacheEnabled() {
         return enableCache;
+    }
+
+    public boolean getStopAtFirstErrorOrWarning() {
+        return stopRunAtFirstErrorOrWarning;
     }
 }

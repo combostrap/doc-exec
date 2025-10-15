@@ -28,8 +28,6 @@ public class DocExecutorInstance {
     @JsonIgnore
     private final DocExecutorUnit docExecutorUnit;
     private final DocCache cache;
-    @JsonIgnore
-    private ProgressDisplay progressDisplay;
     private final DocExecutorResultStore results;
 
     public DocExecutorInstance(DocExecutor conf) {
@@ -61,82 +59,77 @@ public class DocExecutorInstance {
      */
     public DocExecutorResultRun run(Path... paths) {
 
-        DocExecutorResultRun docExecutorResultRun = new DocExecutorResultRun(this);
-        this.progressDisplay = new ProgressDisplay(paths.length, false);
+        try (DocExecutorResultRun docExecutorResultRun = new DocExecutorResultRun(this, paths.length)) {
 
-        DocCache docCache = this.cache;
-        if (docCache != null && conf.getPurgeCache()) {
-            docCache.purgeAll();
-        }
-
-        for (Path path : paths) {
-
-            /**
-             * We skip at execution, not at selection so that
-             * we get the messages in order of execution
-             */
-            Path resumeFrom = this.conf.getResumeFromPath();
-            if (resumeFrom != null && Sorts.naturalSortComparator(resumeFrom.toString(), path.toString()) > 0) {
-                progressDisplay.addExecutionClosingStatus("ResumeFrom is on. Skipping: " + path);
-                continue;
+            DocCache docCache = this.cache;
+            if (docCache != null && conf.getPurgeCache()) {
+                docCache.purgeAll();
             }
 
-            if (!Files.exists(path)) {
-                String msg = "The path (" + path.toAbsolutePath() + ") does not exist";
-                this.log.severe(msg);
-                throw new RuntimeException(msg);
-            }
+            for (Path path : paths) {
 
-            List<Path> childPaths = Fs.getDescendantFiles(path);
-
-            for (Path childPath : childPaths) {
-
-                /**
-                 * Cache ?
-                 */
-                if (docCache != null) {
-                    String md5Cache = docCache.getMd5(childPath);
-                    String md5 = Fs.getMd5(childPath);
-                    if (md5.equals(md5Cache)) {
-                        progressDisplay.addExecutionClosingStatus("Cache is on and the file (" + childPath + ") has already been executed. Skipping the execution.");
-                        docExecutorResultRun.createResultForDoc(childPath)
-                                .setCacheHit(true);
+                try(DocExecutorResultDocExecution docResult = docExecutorResultRun.createResultForDoc(path)) {
+                    /**
+                     * We skip at execution, not at selection so that
+                     * we get the messages in order of execution
+                     */
+                    Path resumeFrom = this.conf.getResumeFromPath();
+                    if (resumeFrom != null && Sorts.naturalSortComparator(resumeFrom.toString(), path.toString()) > 0) {
+                        docResult.setSkippedStatus();
                         continue;
                     }
-                }
 
-                /**
-                 * Execution
-                 */
-                progressDisplay.addExecutionStatus("Executing the doc file (" + childPath + ")");
-                DocExecutorResultDocExecution docExecutorResultDocExecution;
-                try {
-                    docExecutorResultDocExecution = this.execute(docExecutorResultRun, childPath);
-                } catch (NoSuchFileException e) {
-                    throw new RuntimeException(e);
-                }
-
-                if (!conf.getIsDryRun()) {
-                    // Overwrite the new doc
-                    Fs.toFile(docExecutorResultDocExecution.getNewDoc(), childPath);
-                }
-
-                if (docCache != null) {
-                    docCache.store(childPath);
-                }
-
-                if (docExecutorResultDocExecution.hasWarnings()) {
-                    for (String warning : docExecutorResultDocExecution.getWarnings()) {
-                        System.err.println("Warning: " + warning);
+                    if (!Files.exists(path)) {
+                        String msg = "The path (" + path.toAbsolutePath() + ") does not exist";
+                        this.log.severe(msg);
+                        throw new RuntimeException(msg);
                     }
-                    throw new DocWarning("Warning were seen");
+
+
+                    /**
+                     * Cache ?
+                     */
+                    if (docCache != null) {
+                        String md5Cache = docCache.getMd5(path);
+                        String md5 = Fs.getMd5(path);
+                        if (md5.equals(md5Cache)) {
+                            docResult.setCacheHitStatus();
+                            continue;
+                        }
+                    }
+
+                    /**
+                     * Execution
+                     */
+                    DocExecutorResultDocExecution docExecutorResultDocExecution;
+                    try {
+                        docExecutorResultDocExecution = this.execute(docResult, path);
+                    } catch (NoSuchFileException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    if (!conf.getIsDryRun()) {
+                        // Overwrite the new doc
+                        Fs.toFile(docExecutorResultDocExecution.getNewDoc(), path);
+                    }
+
+                    if (docCache != null) {
+                        docCache.store(path);
+                    }
+
+                    if (docExecutorResultDocExecution.hasWarnings()) {
+                        for (String warning : docExecutorResultDocExecution.getWarnings()) {
+                            System.err.println("Warning: " + warning);
+                        }
+                        if (this.conf.getStopAtFirstErrorOrWarning()) {
+                            throw new DocWarning("Warning were seen");
+                        }
+                    }
                 }
 
-                progressDisplay.addExecutionClosingStatus("Doc file (" + childPath + ") executed successfully");
             }
+            return docExecutorResultRun;
         }
-
-        return docExecutorResultRun;
 
     }
 
@@ -144,10 +137,8 @@ public class DocExecutorInstance {
      * @param path the doc to execute
      * @return the new page
      */
-    private DocExecutorResultDocExecution execute(DocExecutorResultRun docExecutorResultRun, Path path) throws NoSuchFileException {
+    private DocExecutorResultDocExecution execute(DocExecutorResultDocExecution docExecutorResultDocExecution, Path path) throws NoSuchFileException {
 
-        DocExecutorResultDocExecution docExecutorResultDocExecution = docExecutorResultRun.createResultForDoc(path)
-                .setHasBeenExecuted(true);
 
         // Parsing
         List<DocUnit> docTests = DocParser.getDocTests(path);
@@ -212,7 +203,7 @@ public class DocExecutorInstance {
                     int start = docFileBlock.getLocationStart();
                     targetDoc.append(originalDoc, previousEnd, start);
 
-                    this.progressDisplay.addExecutionStatus("Replacing the file block (" + DocLog.onOneLine(docFileBlock.getPath()) + ") from the file (" + docUnit.getPath() + ")");
+                    docExecutorResultDocExecution.logFine("Replacing the file block");
                     targetDoc
                             .append(eol)
                             .append(fileContent)
@@ -243,17 +234,17 @@ public class DocExecutorInstance {
                                 || (!cacheIsOn())
                                 || oneCodeBlockHasAlreadyRun
                 ) {
-                    this.progressDisplay.addExecutionStatus("Running the code (" + DocLog.onOneLine(code) + ") from the file (" + docUnit.getPath() + ")");
+                    docExecutorResultDocExecution.logInfo("Running the code (" + DocLog.onOneLine(code) + ")");
                     try {
                         docExecutorResultDocExecution.incrementCodeExecutionCounter();
                         result = docExecutorUnit.run(docUnit).trim();
-                        this.log.fine("Code executed, no error");
+                        docExecutorResultDocExecution.logInfo("Code executed successfully");
                         oneCodeBlockHasAlreadyRun = true;
                     } catch (Exception e) {
                         docExecutorResultDocExecution.addError();
 
                         if (conf.doesStopAtFirstError()) {
-                            this.progressDisplay.addExecutionStatus("Stop at first run. Throwing the error");
+                            docExecutorResultDocExecution.logInfo("Stop at first run. Throwing the error");
                             /**
                              * The message can be huge if the error adds a usage
                              * We don't add it in message
@@ -265,12 +256,11 @@ public class DocExecutorInstance {
                             } else {
                                 result = e.getMessage();
                             }
-                            this.log.severe("Error during execute: " + result);
+                            docExecutorResultDocExecution.logSevere("Error during execute: " + result);
                         }
                     }
                 } else {
-                    this.progressDisplay.addExecutionClosingStatus("The run of the code (" + DocLog.onOneLine(code) + ") was skipped due to caching from the file (" + docUnit.getPath() + ")");
-                    assert cachedDocUnit != null;
+                    docExecutorResultDocExecution.logInfo("The run of the code (" + DocLog.onOneLine(code) + ") was skipped due to caching");
                     result = cachedDocUnit.getConsole();
                 }
 
@@ -312,7 +302,9 @@ public class DocExecutorInstance {
             }
         }
         targetDoc.append(originalDoc, previousEnd, originalDoc.length());
-        docExecutorResultDocExecution.setNewDoc(targetDoc.toString());
+        docExecutorResultDocExecution
+                .setNewDoc(targetDoc.toString())
+                .setSuccessfulStatus();
         return docExecutorResultDocExecution;
 
     }
@@ -366,7 +358,7 @@ public class DocExecutorInstance {
         this.log.infoFirstLevel("Processing " + globPaths.size() + " glob path(s)...");
         List<Path> totalPaths = new ArrayList<>();
         for (String globPattern : globPaths) {
-            this.log.infoFirstLevel("Processing: " + globPattern);
+            this.log.infoFirstLevel("Processing the glob: " + globPattern);
             if (globPattern.endsWith(Glob.DOUBLE_STAR)) {
                 globPattern += "/*";
             }

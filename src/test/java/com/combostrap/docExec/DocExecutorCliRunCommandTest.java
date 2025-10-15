@@ -14,7 +14,7 @@ class DocExecutorCliRunCommandTest {
         DocExecutorCli.main(new String[]{
                 "--dry-run",
                 "--no-cache",
-                "--paths-inline-file",
+                "--file-path",
                 "src/test/resources",
                 "run",
                 "./src/test/resources/docTest/fileTest.txt"}
