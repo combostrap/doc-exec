@@ -2,7 +2,6 @@ package com.combostrap.docExec;
 
 import picocli.CommandLine;
 
-import java.util.List;
 import java.util.concurrent.Callable;
 
 @CommandLine.Command(
@@ -43,7 +42,7 @@ public class DocExecutorCliRunCommand implements Callable<Integer> {
 
         // Build the executor instance and run
         DocExecutorResultRun results = instance.run(docs);
-        instance.getDocExecutorStore()
+        instance.getResults()
                 .store(results);
 
         // We throw if any error, so if we come here, it was successful

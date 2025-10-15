@@ -20,7 +20,10 @@ import java.util.logging.Level;
         description = {
                 "Run code in documentation page with unit elements",
         },
-        subcommands = {DocExecutorCliRunCommand.class}
+        subcommands = {
+                DocExecutorCliRunCommand.class,
+                DocExecutorCliEnvCommand.class
+        }
 )
 public class DocExecutorCli implements Callable<Integer> {
 
@@ -70,11 +73,11 @@ public class DocExecutorCli implements Callable<Integer> {
             description = "Do not stop the execution at the first error")
     private boolean stopRunAtFirstError = true;
 
-    @CommandLine.Option(names = {"-pf", "--paths-inline-file"}, description = "Set a list of directories where to search for inline files (Files inlined in the doc)", defaultValue = ".")
-    private List<Path> searchInlineFilePaths = List.of(Paths.get("."));
+    @CommandLine.Option(names = {"-pf", "--paths-inline-file"}, description = "Set a list of directories where to search for inline files (Files inlined in the doc)", defaultValue = "")
+    private List<Path> searchInlineFilePaths = List.of(Paths.get(""));
 
     @CommandLine.Option(names = {"--path-doc", "-pd"}, description = "A directory where to search for the documentation files if the glob path is relative", defaultValue = ".")
-    private Path searchDocPath = Paths.get(".");
+    private Path searchDocPath = Paths.get("");
 
     @CommandLine.Option(
             names = {"--resume-from", "-rf"},
@@ -111,7 +114,10 @@ public class DocExecutorCli implements Callable<Integer> {
     static DocExecutor toDocExecutor(DocExecutorCli docExecutorCli) {
         String name = docExecutorCli.getName();
         if (name == null) {
-            name = docExecutorCli.getSearchInlineFilePaths().get(0).toAbsolutePath().getParent().getFileName().toString();
+            /**
+             * Name of the doc search path directory
+             */
+            name = docExecutorCli.getSearchInlineFilePaths().get(0).toAbsolutePath().getFileName().toString();
         }
 
         // Create DocExecutor with configured options

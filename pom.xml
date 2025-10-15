@@ -60,6 +60,8 @@
         <!-- https://github.com/git-commit-id/git-commit-id-maven-plugin/releases -->
         <maven.git.plugin.version>9.0.2</maven.git.plugin.version>
 
+        <!-- Jackson version -->
+        <jackson.version>2.20.0</jackson.version>
     </properties>
     <dependencies>
 
@@ -89,7 +91,14 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.20.0</version>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!-- Yaml write to show config -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
 

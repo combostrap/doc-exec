@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 
 /**
  * Execute a unit (code block, file block) found in a doc
@@ -45,7 +44,7 @@ public class DocExecutorUnit {
     private DocExecutorUnit(DocExecutorInstance docExecutorInstance) {
 
         outputDirClass = Paths.get(System.getProperty("java.io.tmpdir"), "docTestClass").normalize().toAbsolutePath();
-        this.docExecutor = docExecutorInstance.getDocExecutor();
+        this.docExecutor = docExecutorInstance.getConf();
         this.log = docExecutorInstance.getLog();
         try {
             Files.createDirectories(outputDirClass);// Safe if the dir already exist

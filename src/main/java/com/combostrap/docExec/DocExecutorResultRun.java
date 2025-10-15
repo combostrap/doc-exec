@@ -36,7 +36,7 @@ public class DocExecutorResultRun {
     public DocExecutorResultDocExecution createResultForDoc(Path childPath) {
         Path normalize;
         try {
-            normalize = this.docExecutorInstance.getDocExecutor().getSearchDocPath().relativize(childPath);
+            normalize = this.docExecutorInstance.getConf().getSearchDocPath().relativize(childPath);
         } catch (Exception e) {
             // Maybe a file passed directly and not from a glob pattern
             normalize = childPath;

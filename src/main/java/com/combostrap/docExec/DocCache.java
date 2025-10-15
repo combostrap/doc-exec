@@ -14,13 +14,13 @@ import java.util.List;
 public class DocCache {
 
 
-    private final Path cacheDirectory;
+    private final Path directory;
 
     private DocCache(String name) {
 
-        cacheDirectory = Xdg.getCacheHome(DocExecutor.APP_NAME).resolve(name);
-        if (!Files.exists(cacheDirectory)) {
-            Fs.createDirectoryIfNotExists(cacheDirectory);
+        directory = Xdg.getCacheHome(DocExecutor.APP_NAME).resolve(name);
+        if (!Files.exists(directory)) {
+            Fs.createDirectoryIfNotExists(directory);
         }
 
 
@@ -30,8 +30,8 @@ public class DocCache {
      * @return the base cache directory
      */
     @SuppressWarnings("unused")
-    public Path getCacheDirectory() {
-        return cacheDirectory;
+    public Path getDirectory() {
+        return directory;
     }
 
     /**
@@ -64,7 +64,7 @@ public class DocCache {
         if (relativeCachePath.isAbsolute()) {
             relativeCachePath = Fs.relativize(path, path.getRoot());
         }
-        return Paths.get(cacheDirectory.toString(), relativeCachePath.toString()).normalize();
+        return Paths.get(directory.toString(), relativeCachePath.toString()).normalize();
     }
 
     /**
@@ -100,7 +100,7 @@ public class DocCache {
     }
 
     public List<Path> purgeAll() {
-        return Fs.deleteIfExists(cacheDirectory, true);
+        return Fs.deleteIfExists(directory, true);
     }
 
     @SuppressWarnings("unused")

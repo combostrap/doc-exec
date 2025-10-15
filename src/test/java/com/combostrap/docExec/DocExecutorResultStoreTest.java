@@ -7,8 +7,6 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class DocExecutorResultStoreTest {
 
 
@@ -19,7 +17,7 @@ class DocExecutorResultStoreTest {
                 .build();
         DocExecutorResultRun docExecutor = build
                 .run("src/test/resources/docFile/file.txt");
-        DocExecutorResultStore executor = build.getDocExecutorStore();
+        DocExecutorResultStore executor = build.getResults();
         Path path = executor.store(docExecutor);
         Assertions.assertTrue(Files.exists(path));
         System.out.println(Fs.toString(path));

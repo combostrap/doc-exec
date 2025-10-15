@@ -11,14 +11,13 @@ import java.util.logging.*;
 public class DocExecutor {
 
 
-    public static final String APP_NAME = DocExecutor.class.getSimpleName();
+    public static final String APP_NAME = "doc-exec";
     private final String name;
 
 
     private final DocSecurityManager securityManager;
     private boolean captureStdErr = true;
 
-    private DocCache docCache;
     private final Map<String, Class<?>> shellCommandMainClassMap = new HashMap<>();
     // The fully qualified path of the command
     // to be sure that we don't hit another command
@@ -98,9 +97,6 @@ public class DocExecutor {
      * @return a DocExecutorRun instance configured with this builder
      */
     public DocExecutorInstance build() {
-        if (this.enableCache) {
-            this.docCache = DocCache.get(this.name);
-        }
         return new DocExecutorInstance(this);
     }
 
@@ -254,10 +250,6 @@ public class DocExecutor {
         return name;
     }
 
-    public DocCache getDocCache() {
-        return docCache;
-    }
-
     public boolean getIsDryRun() {
         return isDryRun;
     }
@@ -319,4 +311,7 @@ public class DocExecutor {
     }
 
 
+    public boolean getIsCacheEnabled() {
+        return enableCache;
+    }
 }

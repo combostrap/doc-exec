@@ -102,7 +102,7 @@ public class DocExecutorInstanceTest {
                 .setShellCommandExecuteViaMainClass("echo", DocCommandEcho.class)
                 .setSearchFilePaths(rootFile)
                 .build();
-        Assertions.assertEquals(false, docExecutorInstance.getDocExecutor().getIsDryRun(), "We overwrite");
+        Assertions.assertEquals(false, docExecutorInstance.getConf().getIsDryRun(), "We overwrite");
         DocExecutorResultDocExecution docTestRun = docExecutorInstance
                 .run(docToRun)
                 .getDocExecutionResults()
