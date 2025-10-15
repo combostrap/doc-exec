@@ -1,40 +1,45 @@
 package com.combostrap.docExec;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * The result of a run executed on a file
- * via {@link DocExecutor#run(Path...)}
+ * via {@link DocExecutorInstance#run(Path...)}
  */
-public class DocExecutorResult {
+public class DocExecutorResultDocExecution {
 
 
     private final Path path;
-    private String doc;
+    @JsonIgnore
+    private String newDoc;
     private int error = 0;
     // Indicate if the doc has been executed
     private boolean docHasBeenExecuted = false;
     private boolean cacheHit = false;
     private int codeExecutionCounter = 0;
+
+    @JsonIgnore
     private List<String> warnings = new ArrayList<>();
 
 
-    private DocExecutorResult(Path path) {
+    private DocExecutorResultDocExecution(Path path) {
         this.path = path;
     }
 
-    public static DocExecutorResult get(Path path) {
-        return new DocExecutorResult(path);
+    public static DocExecutorResultDocExecution get(Path path) {
+        return new DocExecutorResultDocExecution(path);
     }
 
     public String getNewDoc() {
-        return this.doc;
+        return this.newDoc;
     }
 
     public void setNewDoc(String doc) {
-        this.doc = doc;
+        this.newDoc = doc;
     }
 
     public void addError() {
@@ -49,12 +54,12 @@ public class DocExecutorResult {
         return this.docHasBeenExecuted;
     }
 
-    public DocExecutorResult setHasBeenExecuted(boolean b) {
+    public DocExecutorResultDocExecution setHasBeenExecuted(boolean b) {
         this.docHasBeenExecuted = b;
         return this;
     }
 
-    public int getCodeExecution() {
+    public int getCodeExecutionCounter() {
         return this.codeExecutionCounter;
     }
 
@@ -74,7 +79,7 @@ public class DocExecutorResult {
         return this.warnings;
     }
 
-    public DocExecutorResult setCacheHit(boolean b) {
+    public DocExecutorResultDocExecution setCacheHit(boolean b) {
         this.cacheHit = b;
         return this;
     }

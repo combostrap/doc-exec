@@ -22,11 +22,12 @@ public class DocExecutorInstanceTest {
     @Test
     public void docTestWithoutConsole() {
 
-        List<DocExecutorResult> doc =
+        List<DocExecutorResultDocExecution> doc =
                 DocExecutor.create("whatever")
                         .setShellCommandExecuteViaMainClass("echo", DocCommandEcho.class)
                         .build()
-                        .run(Paths.get("./src/test/resources/docTest/withoutExpectation.txt"));
+                        .run(Paths.get("./src/test/resources/docTest/withoutExpectation.txt"))
+                        .getDocExecutionResults();
 
         Assertions.assertEquals(1, doc.size());
     }
@@ -36,12 +37,13 @@ public class DocExecutorInstanceTest {
 
         final Path rootFile = Paths.get("./src/test/resources");
         Path docToRun = Paths.get("./src/test/resources/docTest/fileTest.txt");
-        DocExecutorResult docTestRun = DocExecutor.create("defaultRun")
+        DocExecutorResultDocExecution docTestRun = DocExecutor.create("defaultRun")
                 .setShellCommandExecuteViaMainClass("cat", DocCommandCat.class)
                 .setSearchFilePaths(rootFile)
                 .setEnableCache(false)
                 .build()
                 .run(docToRun)
+                .getDocExecutionResults()
                 .get(0);
         Assertions.assertEquals(0, docTestRun.getErrors(), "No Errors were seen");
 
@@ -101,8 +103,9 @@ public class DocExecutorInstanceTest {
                 .setSearchFilePaths(rootFile)
                 .build();
         Assertions.assertEquals(false, docExecutorInstance.getDocExecutor().getIsDryRun(), "We overwrite");
-        DocExecutorResult docTestRun = docExecutorInstance
+        DocExecutorResultDocExecution docTestRun = docExecutorInstance
                 .run(docToRun)
+                .getDocExecutionResults()
                 .get(0);
         Assertions.assertEquals(0, docTestRun.getErrors(), "No Errors were seen");
 
@@ -128,14 +131,15 @@ public class DocExecutorInstanceTest {
     @Test
     void selectDocsViaGlobs() {
 
+        Path searchDocPath = Paths.get("src/test/resources").toAbsolutePath();
         List<Path> docTestRun = DocExecutor.create("defaultRun")
-                .setSearchDocPath(Paths.get("src/test/resources"))
+                .setSearchDocPath(searchDocPath)
                 .build()
                 .getPathsFromGlobs("docFile/*");
         System.out.println(docTestRun);
         Assertions.assertEquals(2, docTestRun.size());
-        Assertions.assertEquals(Paths.get("src/test/resources/docFile/file.txt"), docTestRun.get(0));
-        Assertions.assertEquals(Paths.get("src/test/resources/docFile/README.md"), docTestRun.get(1));
+        Assertions.assertEquals(searchDocPath.resolve("docFile/file.txt"), docTestRun.get(0));
+        Assertions.assertEquals(searchDocPath.resolve("docFile/README.md"), docTestRun.get(1));
 
     }
 
@@ -164,14 +168,15 @@ public class DocExecutorInstanceTest {
         /**
          * Run
          */
-        List<DocExecutorResult> docTestRun = DocExecutor.create("defaultRun")
+        List<DocExecutorResultDocExecution> docTestRun = DocExecutor.create("defaultRun")
                 .setSearchDocPath(Paths.get("src/test/resources"))
                 .setResumeFrom("docFile/R")
                 .build()
-                .run("docFile/*");
+                .run("docFile/*")
+                .getDocExecutionResults();
         System.out.println(docTestRun);
         Assertions.assertEquals(1, docTestRun.size());
-        Assertions.assertEquals(Paths.get("src/test/resources/docFile/README.md"), docTestRun.get(0).getPath());
+        Assertions.assertEquals(Paths.get("docFile/README.md"), docTestRun.get(0).getPath());
 
     }
 }

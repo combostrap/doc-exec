@@ -11,7 +11,14 @@ class DocExecutorCliRunCommandTest {
 
     @Test
     void runCommandNegate() {
-        DocExecutorCli.main(new String[]{"run","--no-overwrite-docs","./src/test/resources/docTest/fileTest.txt"});
+        DocExecutorCli.main(new String[]{
+                "--dry-run",
+                "--no-cache",
+                "--paths-inline-file",
+                "src/test/resources",
+                "run",
+                "./src/test/resources/docTest/fileTest.txt"}
+        );
     }
 
 }

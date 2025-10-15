@@ -1,6 +1,6 @@
 package com.combostrap.docExec;
 
-import com.combostrap.docExec.util.Fs;
+import com.combostrap.docExec.util.Xdg;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -26,8 +26,9 @@ public class DocCacheExecutionTest {
                 .setEnableCache(true)
                 .build();
         docExecutorInstance.getCache().purgeAll();
-        DocExecutorResult result = docExecutorInstance
+        DocExecutorResultDocExecution result = docExecutorInstance
                 .run(docPath)
+                .getDocExecutionResults()
                 .get(0);
         Assertions.assertEquals(0, result.getErrors(), "no error");
         Assertions.assertTrue(result.hasRun(), "The doc has been executed");
@@ -35,7 +36,9 @@ public class DocCacheExecutionTest {
                 .setEnableCache(true)
                 .build()
                 .run(docPath)
+                .getDocExecutionResults()
                 .get(0);
+
         Assertions.assertFalse(result.hasRun(), "The doc has not been executed");
     }
 
@@ -61,9 +64,10 @@ public class DocCacheExecutionTest {
          * The first run has no cache
          * We just create the cache
          */
-        DocExecutorResult result = docExecutor
+        DocExecutorResultDocExecution result = docExecutor
                 .build()
                 .run(docPath)
+                .getDocExecutionResults()
                 .get(0);
         Assertions.assertEquals(0, result.getErrors(), "no error");
         Assertions.assertTrue(result.hasRun(), "The doc has been executed");
@@ -74,6 +78,7 @@ public class DocCacheExecutionTest {
         result = docExecutor
                 .build()
                 .run(docPath)
+                .getDocExecutionResults()
                 .get(0);
         Assertions.assertFalse(result.hasRun(), "The doc has not been executed because the md5 is the same");
 
@@ -87,9 +92,10 @@ public class DocCacheExecutionTest {
         result = docExecutor
                 .build()
                 .run(docPath)
+                .getDocExecutionResults()
                 .get(0);
-        Assertions.assertEquals(true, result.hasRun(), "The doc has been executed");
-        Assertions.assertEquals(2, result.getCodeExecution(), "Two code unit has been executed");
+        Assertions.assertTrue(result.hasRun(), "The doc has been executed");
+        Assertions.assertEquals(2, result.getCodeExecutionCounter(), "Two code unit has been executed");
     }
 
     /**
@@ -100,7 +106,7 @@ public class DocCacheExecutionTest {
 
         Path path = Paths.get("./hello");
         Path cachedPath = DocCache.get("test").getPathCacheFile(path);
-        Path expectedPath = Paths.get(Fs.getUserAppData(DocExecutor.APP_NAME).toString(), "test", "hello");
+        Path expectedPath = Paths.get(Xdg.getCacheHome(DocExecutor.APP_NAME).toString(), "test", "hello");
         Assertions.assertEquals(expectedPath, cachedPath, "The Path are equals");
 
     }
@@ -113,7 +119,7 @@ public class DocCacheExecutionTest {
 
         Path path = Paths.get("/hello/file.txt");
         Path cachedPath = DocCache.get("test").getPathCacheFile(path);
-        Path expectedPath = Fs.getUserAppData(DocExecutor.APP_NAME)
+        Path expectedPath = Xdg.getCacheHome(DocExecutor.APP_NAME)
                 .resolve("test")
                 .resolve("hello")
                 .resolve("file.txt");
@@ -137,22 +143,24 @@ public class DocCacheExecutionTest {
                 .setEnableCache(true)
                 .setShellCommandExecuteViaMainClass("echo", DocCommandEcho.class);
 
-        DocExecutorResult result = docExecutor
+        DocExecutorResultDocExecution result = docExecutor
                 .build()
                 .run(docPath)
+                .getDocExecutionResults()
                 .get(0);
         Assertions.assertEquals(0, result.getErrors(), "no error");
         Assertions.assertTrue(result.hasRun(), "The doc has been executed");
-        Assertions.assertEquals(1, result.getCodeExecution(), "The code has been executed once");
+        Assertions.assertEquals(1, result.getCodeExecutionCounter(), "The code has been executed once");
         // The code has now a sspace
         doc = prefix + " " + suffix;
         Files.write(docPath, doc.getBytes());
         result = docExecutor
                 .build()
                 .run(docPath)
+                .getDocExecutionResults()
                 .get(0);
         Assertions.assertTrue(result.hasRun(), "The doc with the space has been executed");
-        Assertions.assertEquals(1, result.getCodeExecution(), "The code has still been executed once with the space");
+        Assertions.assertEquals(1, result.getCodeExecutionCounter(), "The code has still been executed once with the space");
     }
 
 }

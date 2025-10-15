@@ -57,6 +57,9 @@ public class DocExecutorCli implements Callable<Integer> {
     private boolean captureStdErr = true;
 
     @CommandLine.Option(names = {"--no-cache"},
+            // default value is when no flag is present
+            // if the flag is in a negated form (no), the value is negated if present
+            // https://github.com/remkop/picocli/issues/813#issuecomment-532423733
             defaultValue = "true",
             description = "Disable the cache"
     )
@@ -247,9 +250,13 @@ public class DocExecutorCli implements Callable<Integer> {
         });
 
         int exitCode = commandLine.execute(args);
-        if (!JavaEnvs.isJUnitTest()) {
-            System.exit(exitCode);
+        if (JavaEnvs.isJUnitTest()) {
+            if (exitCode != 0) {
+                throw new RuntimeException("Exit code (" + exitCode + ") is not zero. Errors has been seen.");
+            }
+            return;
         }
+        System.exit(exitCode);
     }
 
 }

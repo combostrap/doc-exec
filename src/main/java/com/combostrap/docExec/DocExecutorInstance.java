@@ -38,10 +38,10 @@ public class DocExecutorInstance {
      * @param paths the files to execute
      * @return the list of results
      */
-    public List<DocExecutorResult> run(Path... paths) {
+    public DocExecutorResultRun run(Path... paths) {
 
+        DocExecutorResultRun docExecutorResultRun = new DocExecutorResultRun(this);
         this.progressDisplay = new ProgressDisplay(paths.length, false);
-        List<DocExecutorResult> results = new ArrayList<>();
 
         DocCache docCache = docExecutor.getDocCache();
         if (docCache != null && docExecutor.getPurgeCache()) {
@@ -78,11 +78,8 @@ public class DocExecutorInstance {
                     String md5 = Fs.getMd5(childPath);
                     if (md5.equals(md5Cache)) {
                         progressDisplay.addExecutionClosingStatus("Cache is on and the file (" + childPath + ") has already been executed. Skipping the execution.");
-                        DocExecutorResult docExecutorResult =
-                                DocExecutorResult
-                                        .get(childPath)
-                                        .setCacheHit(true);
-                        results.add(docExecutorResult);
+                        docExecutorResultRun.createResultForDoc(childPath)
+                                .setCacheHit(true);
                         continue;
                     }
                 }
@@ -91,24 +88,24 @@ public class DocExecutorInstance {
                  * Execution
                  */
                 progressDisplay.addExecutionStatus("Executing the doc file (" + childPath + ")");
-                DocExecutorResult docExecutorResult;
+                DocExecutorResultDocExecution docExecutorResultDocExecution;
                 try {
-                    docExecutorResult = this.execute(childPath);
+                    docExecutorResultDocExecution = this.execute(docExecutorResultRun, childPath);
                 } catch (NoSuchFileException e) {
                     throw new RuntimeException(e);
                 }
-                results.add(docExecutorResult);
+
                 if (!docExecutor.getIsDryRun()) {
                     // Overwrite the new doc
-                    Fs.toFile(docExecutorResult.getNewDoc(), childPath);
+                    Fs.toFile(docExecutorResultDocExecution.getNewDoc(), childPath);
                 }
 
                 if (docCache != null) {
                     docCache.store(childPath);
                 }
 
-                if (docExecutorResult.hasWarnings()) {
-                    for (String warning : docExecutorResult.getWarnings()) {
+                if (docExecutorResultDocExecution.hasWarnings()) {
+                    for (String warning : docExecutorResultDocExecution.getWarnings()) {
                         System.err.println("Warning: " + warning);
                     }
                     throw new DocWarning("Warning were seen");
@@ -118,18 +115,17 @@ public class DocExecutorInstance {
             }
         }
 
-        return results;
+        return docExecutorResultRun;
 
     }
 
     /**
-     * @param path the doc to execute
+     * @param path                 the doc to execute
      * @return the new page
      */
-    private DocExecutorResult execute(Path path) throws NoSuchFileException {
+    private DocExecutorResultDocExecution execute(DocExecutorResultRun docExecutorResultRun, Path path) throws NoSuchFileException {
 
-        DocExecutorResult docExecutorResult = DocExecutorResult
-                .get(path)
+        DocExecutorResultDocExecution docExecutorResultDocExecution = docExecutorResultRun.createResultForDoc(path)
                 .setHasBeenExecuted(true);
 
         // Parsing
@@ -228,12 +224,12 @@ public class DocExecutorInstance {
                 ) {
                     this.progressDisplay.addExecutionStatus("Running the code (" + DocLog.onOneLine(code) + ") from the file (" + docUnit.getPath() + ")");
                     try {
-                        docExecutorResult.incrementCodeExecutionCounter();
+                        docExecutorResultDocExecution.incrementCodeExecutionCounter();
                         result = docExecutorUnit.run(docUnit).trim();
                         this.log.fine("Code executed, no error");
                         oneCodeBlockHasAlreadyRun = true;
                     } catch (Exception e) {
-                        docExecutorResult.addError();
+                        docExecutorResultDocExecution.addError();
 
                         if (docExecutor.doesStopAtFirstError()) {
                             this.progressDisplay.addExecutionStatus("Stop at first run. Throwing the error");
@@ -277,7 +273,7 @@ public class DocExecutorInstance {
                         int actualConsoleLineCount = Strings.getLineCount(consoleTrim);
                         if (resultLineCount < actualConsoleLineCount && docExecutor.isContentShrinkingWarning()) {
                             String s = "A unit code produces less console lines (" + resultLineCount + ") than the actual (" + actualConsoleLineCount + ") in the page. Unit code: " + Strings.toPrintableCharacter(docUnit.getCode());
-                            docExecutorResult.addWarning(s);
+                            docExecutorResultDocExecution.addWarning(s);
                         }
                         targetDoc
                                 .append(eol)
@@ -295,8 +291,8 @@ public class DocExecutorInstance {
             }
         }
         targetDoc.append(originalDoc, previousEnd, originalDoc.length());
-        docExecutorResult.setNewDoc(targetDoc.toString());
-        return docExecutorResult;
+        docExecutorResultDocExecution.setNewDoc(targetDoc.toString());
+        return docExecutorResultDocExecution;
 
     }
 
@@ -316,7 +312,7 @@ public class DocExecutorInstance {
                 return file;
             }
         }
-        throw new RuntimeException("The file path (" + fileStringPath + ") found in the doc was not found. No files located at: " + resolvedPaths.stream().map(Path::toAbsolutePath).map(Path::toString).sorted().collect(Collectors.joining(", ")));
+        throw new RuntimeException("The file path (" + fileStringPath + ") found in the doc was not found. No files located at: " + resolvedPaths.stream().map(Path::toAbsolutePath).map(Path::normalize).map(Path::toString).sorted().collect(Collectors.joining(", ")));
 
     }
 
@@ -331,11 +327,11 @@ public class DocExecutorInstance {
         return docExecutor.getDocCache();
     }
 
-    public List<DocExecutorResult> run(String... globPaths) {
+    public DocExecutorResultRun run(String... globPaths) {
         return run(Arrays.asList(globPaths));
     }
 
-    public List<DocExecutorResult> run(List<String> globPaths) {
+    public DocExecutorResultRun run(List<String> globPaths) {
 
         List<Path> totalPaths = getPathsFromGlobs(globPaths);
         return run(totalPaths.toArray(new Path[0]));
@@ -358,14 +354,15 @@ public class DocExecutorInstance {
                 globPattern = globPattern + docFileExtension;
             }
             GlobPath globPathObject = new GlobPath(globPattern);
-            List<Path> paths = Fs.getFilesByGlob(this.docExecutor.getSearchDocPath(), globPathObject)
+            Path docPath = this.docExecutor.getSearchDocPath();
+            List<Path> paths = Fs.getFilesByGlob(docPath, globPathObject)
                     .stream()
                     // Natural Order
                     // [1-one, 2-two, 3-three, 10-ten, 20-twenty, 100-hundred]
                     .sorted((x, y) -> Sorts.naturalSortComparator(x.toString(), y.toString()))
                     .collect(Collectors.toList());
             if (paths.isEmpty()) {
-                throw new RuntimeException("No docs selected for the glob: " + globPattern);
+                throw new RuntimeException("No docs selected for the glob (" + globPattern+") with the doc path ("+docPath+")");
             }
             totalPaths.addAll(paths);
         }
@@ -384,4 +381,7 @@ public class DocExecutorInstance {
         return this.log;
     }
 
+    public DocExecutorResultStore getDocExecutorStore() {
+        return new DocExecutorResultStore(this);
+    }
 }

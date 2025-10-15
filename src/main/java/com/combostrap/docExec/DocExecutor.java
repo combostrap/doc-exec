@@ -284,7 +284,10 @@ public class DocExecutor {
     }
 
     public DocExecutor setSearchDocPath(Path searchDocPath) {
-        this.searchDocPath = searchDocPath;
+        if (!searchDocPath.isAbsolute()) {
+            searchDocPath = searchDocPath.toAbsolutePath();
+        }
+        this.searchDocPath = searchDocPath.normalize();
         return this;
     }
 

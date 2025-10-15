@@ -833,8 +833,8 @@ public class Fs {
     }
 
     /**
-     * @param currentPath    - the current path
-     * @param globPath - a glob
+     * @param currentPath - the current path
+     * @param globPath    - a glob
      * @return a list of path that matches the glob
      * <p>
      * ex: the following glob
@@ -862,7 +862,6 @@ public class Fs {
          */
 
 
-
         // if not root in glob
         List<String> stringNames = new ArrayList<>();
         // Absolute glob path
@@ -876,6 +875,33 @@ public class Fs {
         }
 
         /**
+         * Normalize
+         * Delete actual and parent names (ie point and double point)
+         */
+        List<String> stringNamesNormalized = new ArrayList<>();
+        for (String stringName : stringNames) {
+
+            /**
+             * Actual
+             */
+            if (stringName.equals(".")) {
+                continue;
+            }
+
+            /**
+             * Go to parent
+             */
+            if (stringName.equals("..")) {
+                // delete last name
+                stringNamesNormalized = stringNamesNormalized.subList(0, stringNamesNormalized.size() - 2);
+                continue;
+            }
+
+            stringNamesNormalized.add(stringName);
+        }
+
+
+        /**
          * Recursive processing
          * We go through all glob names and retain only
          * the matched paths in the currentMatchesPaths variable
@@ -883,7 +909,7 @@ public class Fs {
         List<Path> currentMatchesPaths = new ArrayList<>();
         currentMatchesPaths.add(startPath);
         boolean recursiveWildCardFound = false;
-        for (String name : stringNames) {
+        for (String name : stringNamesNormalized) {
 
             if (name.equals(Glob.DOUBLE_STAR)) {
                 recursiveWildCardFound = true;
