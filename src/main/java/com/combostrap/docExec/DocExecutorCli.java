@@ -18,16 +18,17 @@ import java.util.logging.Level;
         mixinStandardHelpOptions = true,
         version = "1.0.0",
         description = {
-                "Run code in documentation page with unit elements",
+                "Run code in documentation page",
         },
         subcommands = {
                 DocExecutorCliRunCommand.class,
-                DocExecutorCliEnvCommand.class
+                DocExecutorCliEnvCommand.class,
+                DocExecutorCliResultCommand.class
         }
 )
 public class DocExecutorCli implements Callable<Integer> {
 
-    @CommandLine.Option(names = {"-n", "--doc-name"}, description = "The name (used to determine the cache and results store), default to the name of the doc path directory")
+    @CommandLine.Option(names = {"-n", "--doc-name"}, description = "The doc name (default to the name of the doc path directory). It determines the directory name for the cache and history.")
     private String name;
 
     @CommandLine.Option(
@@ -236,6 +237,25 @@ public class DocExecutorCli implements Callable<Integer> {
     }
 
     public static void main(String[] args) {
+        CommandLine commandLine = getCommandLine();
+
+        int exitCode = commandLine.execute(args);
+        if (JavaEnvs.isJUnitTest()) {
+            if (exitCode != 0) {
+                throw new RuntimeException("Exit code (" + exitCode + ") is not zero. Errors has been seen.");
+            }
+            return;
+        }
+        System.exit(exitCode);
+    }
+
+    /**
+     * A command line with converter
+     * For now, there is no to configure it,
+     * but it could be used in test if it was possible
+     */
+    protected static CommandLine getCommandLine() {
+
         CommandLine commandLine = new CommandLine(new DocExecutorCli())
                 .registerConverter(Level.class, new LogLevelConverter());
 
@@ -257,15 +277,7 @@ public class DocExecutorCli implements Callable<Integer> {
             DocLog.LOGGER.log(Level.SEVERE, "Command execution failed", throwable);
             return 1;
         });
-
-        int exitCode = commandLine.execute(args);
-        if (JavaEnvs.isJUnitTest()) {
-            if (exitCode != 0) {
-                throw new RuntimeException("Exit code (" + exitCode + ") is not zero. Errors has been seen.");
-            }
-            return;
-        }
-        System.exit(exitCode);
+        return commandLine;
     }
 
 }

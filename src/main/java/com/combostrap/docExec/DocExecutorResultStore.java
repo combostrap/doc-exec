@@ -12,6 +12,10 @@ import java.nio.file.Path;
 
 public class DocExecutorResultStore {
 
+    public Path getDirectory() {
+        return directory;
+    }
+
     @JsonProperty
     private final Path directory;
 

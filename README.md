@@ -3,11 +3,14 @@
 
 ## About
 
-A doc executor that:
-* executes code block found in the document 
-* injects optionally the output
-* inject file contents
+`doc-exec` is a tool that can:
+* parse documentation files, 
+* extract code blocks, 
+* execute them, 
+* and potentially update the documentation with the execution results
 
+It's similar to executable documentation tools like Jupyter notebooks but for general
+documentation formats.
 
 ## Example
 
