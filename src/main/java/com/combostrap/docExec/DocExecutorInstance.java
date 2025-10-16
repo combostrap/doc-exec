@@ -236,7 +236,7 @@ public class DocExecutorInstance {
                 ) {
                     docExecutorResultDocExecution.logInfo("Running the code (" + DocLog.onOneLine(code) + ")");
                     try {
-                        docExecutorResultDocExecution.incrementCodeExecutionCounter();
+                        docExecutorResultDocExecution.incrementExecutionCount();
                         result = docExecutorUnit.run(docUnit).trim();
                         docExecutorResultDocExecution.logInfo("Code executed successfully");
                         oneCodeBlockHasAlreadyRun = true;

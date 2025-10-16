@@ -45,7 +45,7 @@ public class DocExecutorInstanceTest {
                 .run(docToRun)
                 .getDocExecutionResults()
                 .get(0);
-        Assertions.assertEquals(0, docTestRun.getErrors(), "No Errors were seen");
+        Assertions.assertEquals(0, docTestRun.getErrorCount(), "No Errors were seen");
 
         Path newPath = Files.createTempFile("replaceFileContent", "txt");
         String newDoc = docTestRun.getNewDoc();
@@ -107,7 +107,7 @@ public class DocExecutorInstanceTest {
                 .run(docToRun)
                 .getDocExecutionResults()
                 .get(0);
-        Assertions.assertEquals(0, docTestRun.getErrors(), "No Errors were seen");
+        Assertions.assertEquals(0, docTestRun.getErrorCount(), "No Errors were seen");
 
 
         String newDoc = docTestRun.getNewDoc();

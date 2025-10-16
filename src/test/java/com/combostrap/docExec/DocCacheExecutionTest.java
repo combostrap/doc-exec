@@ -30,7 +30,7 @@ public class DocCacheExecutionTest {
                 .run(docPath)
                 .getDocExecutionResults()
                 .get(0);
-        Assertions.assertEquals(0, result.getErrors(), "no error");
+        Assertions.assertEquals(0, result.getErrorCount(), "no error");
         Assertions.assertTrue(result.hasRun(), "The doc has been executed");
         result = DocExecutor.create(runName)
                 .setEnableCache(true)
@@ -69,7 +69,7 @@ public class DocCacheExecutionTest {
                 .run(docPath)
                 .getDocExecutionResults()
                 .get(0);
-        Assertions.assertEquals(0, result.getErrors(), "no error");
+        Assertions.assertEquals(0, result.getErrorCount(), "no error");
         Assertions.assertTrue(result.hasRun(), "The doc has been executed");
 
         /**
@@ -95,7 +95,7 @@ public class DocCacheExecutionTest {
                 .getDocExecutionResults()
                 .get(0);
         Assertions.assertTrue(result.hasRun(), "The doc has been executed");
-        Assertions.assertEquals(2, result.getCodeExecutionCounter(), "Two code unit has been executed");
+        Assertions.assertEquals(2, result.getExecutionCount(), "Two code unit has been executed");
     }
 
     /**
@@ -148,9 +148,9 @@ public class DocCacheExecutionTest {
                 .run(docPath)
                 .getDocExecutionResults()
                 .get(0);
-        Assertions.assertEquals(0, result.getErrors(), "no error");
+        Assertions.assertEquals(0, result.getErrorCount(), "no error");
         Assertions.assertTrue(result.hasRun(), "The doc has been executed");
-        Assertions.assertEquals(1, result.getCodeExecutionCounter(), "The code has been executed once");
+        Assertions.assertEquals(1, result.getExecutionCount(), "The code has been executed once");
         // The code has now a sspace
         doc = prefix + " " + suffix;
         Files.write(docPath, doc.getBytes());
@@ -160,7 +160,7 @@ public class DocCacheExecutionTest {
                 .getDocExecutionResults()
                 .get(0);
         Assertions.assertTrue(result.hasRun(), "The doc with the space has been executed");
-        Assertions.assertEquals(1, result.getCodeExecutionCounter(), "The code has still been executed once with the space");
+        Assertions.assertEquals(1, result.getExecutionCount(), "The code has still been executed once with the space");
     }
 
 }

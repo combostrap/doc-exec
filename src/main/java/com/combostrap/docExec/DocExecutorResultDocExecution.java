@@ -2,6 +2,7 @@ package com.combostrap.docExec;
 
 import com.combostrap.docExec.util.Timer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.List;
 /**
  * The result of a run executed on a file
  * via {@link DocExecutorInstance#run(Path...)}
+ * Note: all getters are persisted as result in the json file
  */
 public class DocExecutorResultDocExecution implements AutoCloseable {
 
@@ -18,10 +20,10 @@ public class DocExecutorResultDocExecution implements AutoCloseable {
     private final Timer timer;
     @JsonIgnore
     private String newDoc;
-    private int error = 0;
+    private int errorCount = 0;
     // Indicate if the doc has been executed
     private boolean cacheHit = false;
-    private int codeExecutionCounter = 0;
+    private int executionCount = 0;
 
     @JsonIgnore
     private final List<String> warnings = new ArrayList<>();
@@ -55,24 +57,31 @@ public class DocExecutorResultDocExecution implements AutoCloseable {
     }
 
     public void addError() {
-        this.error++;
+        this.errorCount++;
     }
 
-    public int getErrors() {
-        return this.error;
+    @JsonProperty
+    public int getErrorCount() {
+        return this.errorCount;
     }
 
 
-    public int getCodeExecutionCounter() {
-        return this.codeExecutionCounter;
+    @JsonProperty
+    public int getExecutionCount() {
+        return this.executionCount;
     }
 
-    public void incrementCodeExecutionCounter() {
-        this.codeExecutionCounter++;
+    public void incrementExecutionCount() {
+        this.executionCount++;
     }
 
     public void addWarning(String s) {
         this.warnings.add(s);
+    }
+
+    @JsonProperty
+    public int getWarningCount() {
+        return this.warnings.size();
     }
 
     public boolean hasWarnings() {
@@ -86,9 +95,10 @@ public class DocExecutorResultDocExecution implements AutoCloseable {
     public void setCacheHitStatus() {
         this.cacheHit = true;
         this.exitCode = -1;
-        logInfo( "Cache hit. Skipping execution.");
+        logInfo("Cache hit. Skipping execution.");
     }
 
+    @JsonProperty
     public Path getPath() {
         return this.path;
     }
@@ -98,8 +108,14 @@ public class DocExecutorResultDocExecution implements AutoCloseable {
         return path.toString();
     }
 
+    @JsonIgnore
     public boolean isClosed() {
         return this.timer.hasStopped();
+    }
+
+    @JsonProperty
+    public long getDurationMs() {
+        return this.timer.getDuration().toMillis();
     }
 
     public void close() {
@@ -118,12 +134,27 @@ public class DocExecutorResultDocExecution implements AutoCloseable {
         logInfo("ResumeFrom is on. Skipping");
     }
 
+    @JsonIgnore
     public boolean hasRun() {
         return !this.cacheHit && !this.skipped;
     }
 
     public void setSuccessfulStatus() {
         this.exitCode = 0;
+    }
+
+    @JsonProperty
+    public String getStatus() {
+        if (this.cacheHit) {
+            return "CacheHit";
+        }
+        if (this.skipped) {
+            return "Skipped";
+        }
+        if (this.exitCode == 0) {
+            return "Success";
+        }
+        return "Failure";
     }
 
     public void logInfo(String s) {
@@ -139,11 +170,14 @@ public class DocExecutorResultDocExecution implements AutoCloseable {
         DocLog.LOGGER.severe(logPrefix + s);
     }
 
+    @JsonIgnore
     public boolean wasSkipped() {
         return this.skipped;
     }
 
+    @JsonProperty
     public Integer getExitStatus() {
         return this.exitCode;
     }
+
 }
