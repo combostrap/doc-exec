@@ -3,9 +3,9 @@ package com.combostrap.docExec;
 
 import com.combostrap.docExec.util.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,8 +19,7 @@ import java.util.stream.Collectors;
  */
 public class DocExecutorInstance {
 
-    public static final String STOP_AT_FIRST_ERROR = "Stop at first error";
-    private final DocExecutor conf;
+    private final DocExecutor docExecutor;
     private final String eol = System.lineSeparator();
 
     @JsonIgnore
@@ -30,12 +29,12 @@ public class DocExecutorInstance {
     private final DocCache cache;
     private final DocExecutorResultStore results;
 
-    public DocExecutorInstance(DocExecutor conf) {
-        this.conf = conf;
+    public DocExecutorInstance(DocExecutor docExecutor) {
+        this.docExecutor = docExecutor;
         /**
          * Log Init
          */
-        this.log = DocLog.build(conf);
+        this.log = DocLog.build(docExecutor);
         /**
          * The unit runner
          */
@@ -44,8 +43,8 @@ public class DocExecutorInstance {
          * The result store
          */
         results = new DocExecutorResultStore(this);
-        if (this.conf.getIsCacheEnabled()) {
-            this.cache = DocCache.get(this.conf.getName());
+        if (this.docExecutor.getIsCacheEnabled()) {
+            this.cache = DocCache.get(this.docExecutor.getName());
         } else {
             this.cache = null;
         }
@@ -58,22 +57,22 @@ public class DocExecutorInstance {
      * @return the list of results
      */
     public DocExecutorResultRun run(Path... paths) {
-
-        try (DocExecutorResultRun docExecutorResultRun = new DocExecutorResultRun(this, paths.length)) {
+        DocExecutorResultRun docExecutorResultRun = new DocExecutorResultRun(this, paths.length);
+        try {
 
             DocCache docCache = this.cache;
-            if (docCache != null && conf.getPurgeCache()) {
+            if (docCache != null && docExecutor.getPurgeCache()) {
                 docCache.purgeAll();
             }
 
             for (Path path : paths) {
 
-                try(DocExecutorResultDocExecution docResult = docExecutorResultRun.createResultForDoc(path)) {
+                try (DocExecutorResultDocExecution docResult = docExecutorResultRun.createResultForDoc(path)) {
                     /**
                      * We skip at execution, not at selection so that
                      * we get the messages in order of execution
                      */
-                    Path resumeFrom = this.conf.getResumeFromPath();
+                    Path resumeFrom = this.docExecutor.getResumeFromPath();
                     if (resumeFrom != null && Sorts.naturalSortComparator(resumeFrom.toString(), path.toString()) > 0) {
                         docResult.setSkippedStatus();
                         continue;
@@ -82,7 +81,12 @@ public class DocExecutorInstance {
                     if (!Files.exists(path)) {
                         String msg = "The path (" + path.toAbsolutePath() + ") does not exist";
                         this.log.severe(msg);
-                        throw new RuntimeException(msg);
+                        RuntimeException exception = new RuntimeException(msg);
+                        docResult.setErrorStatus(exception);
+                        if (this.docExecutor.doesStopAtFirstError()) {
+                            throw new DocFirstErrorOrWarning(exception);
+                        }
+                        continue;
                     }
 
 
@@ -101,14 +105,8 @@ public class DocExecutorInstance {
                     /**
                      * Execution
                      */
-                    DocExecutorResultDocExecution docExecutorResultDocExecution;
-                    try {
-                        docExecutorResultDocExecution = this.execute(docResult, path);
-                    } catch (NoSuchFileException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    if (!conf.getIsDryRun()) {
+                    DocExecutorResultDocExecution docExecutorResultDocExecution = this.execute(docResult, path);
+                    if (!docExecutor.getIsDryRun()) {
                         // Overwrite the new doc
                         Fs.toFile(docExecutorResultDocExecution.getNewDoc(), path);
                     }
@@ -121,14 +119,17 @@ public class DocExecutorInstance {
                         for (String warning : docExecutorResultDocExecution.getWarnings()) {
                             System.err.println("Warning: " + warning);
                         }
-                        if (this.conf.getStopAtFirstErrorOrWarning()) {
-                            throw new DocWarning("Warning were seen");
+                        if (this.docExecutor.getStopAtFirstErrorOrWarning()) {
+                            DocWarning e = new DocWarning("Warning were seen");
+                            throw new DocFirstErrorOrWarning(e);
                         }
                     }
                 }
 
             }
             return docExecutorResultRun;
+        } finally {
+            docExecutorResultRun.close();
         }
 
     }
@@ -137,7 +138,7 @@ public class DocExecutorInstance {
      * @param path the doc to execute
      * @return the new page
      */
-    private DocExecutorResultDocExecution execute(DocExecutorResultDocExecution docExecutorResultDocExecution, Path path) throws NoSuchFileException {
+    private DocExecutorResultDocExecution execute(DocExecutorResultDocExecution docExecutorResultDocExecution, Path path) {
 
 
         // Parsing
@@ -241,23 +242,17 @@ public class DocExecutorInstance {
                         docExecutorResultDocExecution.logInfo("Code executed successfully");
                         oneCodeBlockHasAlreadyRun = true;
                     } catch (Exception e) {
-                        docExecutorResultDocExecution.addError();
+                        docExecutorResultDocExecution.setErrorStatus(e);
 
-                        if (conf.doesStopAtFirstError()) {
-                            docExecutorResultDocExecution.logInfo("Stop at first run. Throwing the error");
-                            /**
-                             * The message can be huge if the error adds a usage
-                             * We don't add it in message
-                             */
-                            throw new DocFirstError(STOP_AT_FIRST_ERROR, e);
-                        } else {
-                            if (e.getClass().equals(NullPointerException.class)) {
-                                result = "null pointer exception";
-                            } else {
-                                result = e.getMessage();
-                            }
-                            docExecutorResultDocExecution.logSevere("Error during execute: " + result);
+                        if (docExecutor.doesStopAtFirstError()) {
+                            throw new DocFirstErrorOrWarning(e);
                         }
+                        if (e.getClass().equals(NullPointerException.class)) {
+                            result = "null pointer exception";
+                        } else {
+                            result = e.getMessage();
+                        }
+                        docExecutorResultDocExecution.logSevere("Error during execute: " + result);
                     }
                 } else {
                     docExecutorResultDocExecution.logInfo("The run of the code (" + DocLog.onOneLine(code) + ") was skipped due to caching");
@@ -282,7 +277,7 @@ public class DocExecutorInstance {
 
                         int resultLineCount = Strings.getLineCount(result);
                         int actualConsoleLineCount = Strings.getLineCount(consoleTrim);
-                        if (resultLineCount < actualConsoleLineCount && conf.isContentShrinkingWarning()) {
+                        if (resultLineCount < actualConsoleLineCount && docExecutor.isContentShrinkingWarning()) {
                             String s = "A unit code produces less console lines (" + resultLineCount + ") than the actual (" + actualConsoleLineCount + ") in the page. Unit code: " + Strings.toPrintableCharacter(docUnit.getCode());
                             docExecutorResultDocExecution.addWarning(s);
                         }
@@ -318,7 +313,7 @@ public class DocExecutorInstance {
      */
     private Path searchInlineFile(String fileStringPath) {
         List<Path> resolvedPaths = new ArrayList<>();
-        for (Path searchFile : conf.getSearchFilePaths()) {
+        for (Path searchFile : docExecutor.getSearchFilePaths()) {
             Path file = searchFile.resolve(fileStringPath);
             resolvedPaths.add(file);
             if (Files.isRegularFile(file)) {
@@ -362,12 +357,12 @@ public class DocExecutorInstance {
             if (globPattern.endsWith(Glob.DOUBLE_STAR)) {
                 globPattern += "/*";
             }
-            String docFileExtension = ".{" + String.join(",", conf.getDocExtensions()) + "}";
+            String docFileExtension = ".{" + String.join(",", docExecutor.getDocExtensions()) + "}";
             if (!globPattern.contains(".")) {
                 globPattern = globPattern + docFileExtension;
             }
             GlobPath globPathObject = new GlobPath(globPattern);
-            Path docPath = this.conf.getSearchDocPath();
+            Path docPath = this.docExecutor.getSearchDocPath();
             List<Path> paths = Fs.getFilesByGlob(docPath, globPathObject)
                     .stream()
                     // Natural Order
@@ -386,16 +381,17 @@ public class DocExecutorInstance {
         return this.docExecutorUnit;
     }
 
-    public DocExecutor getConf() {
-        return this.conf;
+    @JsonProperty("conf")
+    public DocExecutor getDocExecutor() {
+        return this.docExecutor;
     }
 
     public DocLog getLog() {
         return this.log;
     }
 
-    public DocExecutorResultStore getResults() {
-
+    @JsonProperty("results")
+    public DocExecutorResultStore getResultStore() {
         return results;
     }
 }

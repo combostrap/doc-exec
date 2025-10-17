@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * The result of a run
  */
-public class DocExecutorResultRun implements AutoCloseable {
+public class DocExecutorResultRun {
 
 
     private final LocalDateTime startTime;
@@ -43,7 +43,7 @@ public class DocExecutorResultRun implements AutoCloseable {
         }
         Path normalize;
         try {
-            normalize = this.docExecutorInstance.getConf().getSearchDocPath().relativize(childPath);
+            normalize = this.docExecutorInstance.getDocExecutor().getSearchDocPath().relativize(childPath);
         } catch (Exception e) {
             // Maybe a file passed directly and not from a glob pattern
             // so not relative
@@ -61,5 +61,6 @@ public class DocExecutorResultRun implements AutoCloseable {
 
     public void close() {
         DocLog.LOGGER.info("Execution finished. " + this.results.size() + " docs were executed");
+        this.docExecutorInstance.getResultStore().store(this);
     }
 }

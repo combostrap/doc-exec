@@ -17,7 +17,7 @@ class DocExecutorResultStoreTest {
                 .build();
         DocExecutorResultRun docExecutor = build
                 .run("src/test/resources/docFile/file.txt");
-        DocExecutorResultStore executor = build.getResults();
+        DocExecutorResultStore executor = build.getResultStore();
         Path path = executor.store(docExecutor);
         Assertions.assertTrue(Files.exists(path));
         System.out.println(Fs.toString(path));

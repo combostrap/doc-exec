@@ -21,7 +21,7 @@ class DocExecutorCliResultCommandTest {
     @Test
     void testResultCommandWithoutResults() {
 
-        Path historyDir = DocExecutorCli.toDocExecutor(new DocExecutorCli()).build().getResults().getDirectory();
+        Path historyDir = DocExecutorCli.toDocExecutor(new DocExecutorCli()).build().getResultStore().getDirectory();
         Fs.delete(historyDir, true);
         String output = TestUtil.runAndCaptureConsoleOutput(RESULT_COMMAND_NAME);
         System.out.println(output);
@@ -33,7 +33,7 @@ class DocExecutorCliResultCommandTest {
     @Test
     void testResultWithJsonlFiles() throws Exception {
 
-        Path historyDir = DocExecutorCli.toDocExecutor(new DocExecutorCli()).build().getResults().getDirectory();
+        Path historyDir = DocExecutorCli.toDocExecutor(new DocExecutorCli()).build().getResultStore().getDirectory();
 
         // Create test .jsonl files with different timestamps
         Instant now = Instant.now();

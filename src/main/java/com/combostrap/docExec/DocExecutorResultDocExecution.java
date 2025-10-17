@@ -4,6 +4,7 @@ import com.combostrap.docExec.util.Timer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,9 @@ public class DocExecutorResultDocExecution implements AutoCloseable {
     @JsonIgnore
     private final String logPrefix;
 
+    @JsonIgnore
+    private Exception exception;
+
 
     /**
      * @param run      - the run
@@ -56,9 +60,6 @@ public class DocExecutorResultDocExecution implements AutoCloseable {
         return this;
     }
 
-    public void addError() {
-        this.errorCount++;
-    }
 
     @JsonProperty
     public int getErrorCount() {
@@ -178,6 +179,13 @@ public class DocExecutorResultDocExecution implements AutoCloseable {
     @JsonProperty
     public Integer getExitStatus() {
         return this.exitCode;
+    }
+
+    public void setErrorStatus(Exception exception) {
+        this.exception = exception;
+        this.errorCount++;
+        this.exitCode = 1;
+        logSevere(exception.toString());
     }
 
 }

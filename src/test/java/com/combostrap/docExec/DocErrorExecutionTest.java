@@ -23,7 +23,7 @@ public class DocErrorExecutionTest {
         /**
          * Error message can be huge, we don't add it into our exception
          */
-        Assertions.assertEquals(DocExecutorInstance.STOP_AT_FIRST_ERROR, error.getMessage());
+        Assertions.assertEquals(DocFirstErrorOrWarning.STOP_AT_FIRST_ERROR, error.getMessage());
         /**
          * The cause is, it does not exist
          */

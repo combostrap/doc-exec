@@ -44,7 +44,7 @@ public class DocExecutorUnit {
     private DocExecutorUnit(DocExecutorInstance docExecutorInstance) {
 
         outputDirClass = Paths.get(System.getProperty("java.io.tmpdir"), "docTestClass").normalize().toAbsolutePath();
-        this.docExecutor = docExecutorInstance.getConf();
+        this.docExecutor = docExecutorInstance.getDocExecutor();
         this.log = docExecutorInstance.getLog();
         try {
             Files.createDirectories(outputDirClass);// Safe if the dir already exist

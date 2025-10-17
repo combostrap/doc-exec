@@ -22,7 +22,7 @@ public class DocExecutorResultStore {
     public DocExecutorResultStore(DocExecutorInstance docExecutorInstance) {
         directory = Fs.getTempDirectory()
                 .resolve(DocExecutor.APP_NAME)
-                .resolve(docExecutorInstance.getConf().getName())
+                .resolve(docExecutorInstance.getDocExecutor().getName())
                 .resolve("results");
         if (!Files.exists(directory)) {
             Fs.createDirectoryIfNotExists(directory);

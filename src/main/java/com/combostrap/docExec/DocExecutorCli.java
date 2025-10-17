@@ -271,7 +271,7 @@ public class DocExecutorCli implements Callable<Integer> {
              * because it seems they are in another thread
              */
             Throwable throwable = ex;
-            if (ex instanceof DocFirstError) {
+            if (ex instanceof DocFirstErrorOrWarning) {
                 throwable = ex.getCause();
             }
             DocLog.LOGGER.log(Level.SEVERE, "Command execution failed", throwable);

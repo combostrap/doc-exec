@@ -36,14 +36,10 @@ public class DocExecutorCliRunCommand implements Callable<Integer> {
     @Override
     public Integer call() {
 
-        DocExecutorInstance instance = DocExecutorCli
+        DocExecutorCli
                 .toDocExecutor(parent)
-                .build();
-
-        // Build the executor instance and run
-        DocExecutorResultRun results = instance.run(docs);
-        instance.getResults()
-                .store(results);
+                .build()
+                .run(docs);
 
         // We throw if any error, so if we come here, it was successful
         return 0;

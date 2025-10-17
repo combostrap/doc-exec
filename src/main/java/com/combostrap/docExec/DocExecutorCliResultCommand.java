@@ -27,7 +27,7 @@ public class DocExecutorCliResultCommand implements Callable<Integer> {
     public Integer call() throws Exception {
 
         DocExecutorInstance docExecutorInstance = DocExecutorCli.toDocExecutor(parent).build();
-        DocExecutorResultStore resultStore = docExecutorInstance.getResults();
+        DocExecutorResultStore resultStore = docExecutorInstance.getResultStore();
 
         Path historyDirectory = resultStore.getDirectory();
 
