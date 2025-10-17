@@ -53,7 +53,8 @@ public class DocExecutorCliResultCommand implements Callable<Integer> {
             }
             System.out.println("Results found at: " + historyDirectory);
             for (Path path : filesPath) {
-                String fileName = path.getFileName().toString();
+                // not the relative path because the user will just copy it to see the content
+                String fileName = path.toString();
                 long fileSize = Files.size(path);
                 System.out.printf("* %-30s (%d bytes)%n", fileName, fileSize);
             }

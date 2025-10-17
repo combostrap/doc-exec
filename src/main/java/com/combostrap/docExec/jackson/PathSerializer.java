@@ -23,9 +23,14 @@ public class PathSerializer extends StdSerializer<Path> {
         }
         boolean isLocal = path.getFileSystem().provider().getScheme().equals("file");
         if(isLocal) {
-            gen.writeString(path.toUri().getPath());
+            /**
+             * No scheme, print the path (relative or absolute)
+             * {@link Path#toUri()} makes it an absolute path,
+             * and we don't want that when reporting
+             */
+            gen.writeString(path.toString());
             return;
         }
-        gen.writeString(path.toString());
+        gen.writeString(path.toUri().toString());
     }
 }

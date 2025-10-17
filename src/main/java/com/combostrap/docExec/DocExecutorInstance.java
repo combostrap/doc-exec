@@ -243,7 +243,6 @@ public class DocExecutorInstance {
                         oneCodeBlockHasAlreadyRun = true;
                     } catch (Exception e) {
                         docExecutorResultDocExecution.setErrorStatus(e);
-
                         if (docExecutor.doesStopAtFirstError()) {
                             throw new DocFirstErrorOrWarning(e);
                         }

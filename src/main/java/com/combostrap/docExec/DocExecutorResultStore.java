@@ -1,8 +1,10 @@
 package com.combostrap.docExec;
 
+import com.combostrap.docExec.jackson.PathSerializer;
 import com.combostrap.docExec.util.Fs;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -31,6 +33,9 @@ public class DocExecutorResultStore {
 
     public Path store(DocExecutorResultRun run) {
         ObjectMapper objectMapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(Path.class, new PathSerializer());
+        objectMapper.registerModule(module);
         String timeFormat = run.getStartTime().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
         Path targetFile = directory.resolve(timeFormat + ".jsonl");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(targetFile.toFile()))) {
