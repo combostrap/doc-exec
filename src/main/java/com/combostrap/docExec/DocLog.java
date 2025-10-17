@@ -40,31 +40,45 @@ public class DocLog {
              * {@link ConsoleHandler} sends to `std.err` and you can't modify it
              * You need to use a {@link StreamHandler}
              * We use the same stderr for all level so that they are in the same buffer
+             * We flush also instantly because we use it as user feedback
              */
-            PrintStream err = System.err;
-            StreamHandler docHandler = new StreamHandler(
-                    err,
-                    new java.util.logging.Formatter() {
-                        @Override
-                        public String format(LogRecord record) {
+            ConsoleHandler docExecHandler = new ConsoleHandler() {
 
-                            String message = String.format("%-7s - %s%n",
-                                    record.getLevel(),
-                                    record.getMessage()
-                            );
-                            /**
-                             * Adding stack trace if any error
-                             */
-                            if (record.getThrown() != null) {
-                                StringWriter sw = new StringWriter();
-                                PrintWriter pw = new PrintWriter(sw);
-                                record.getThrown().printStackTrace(pw);
-                                message += sw + System.lineSeparator();
-                            }
-                            return message;
+                private final Formatter formatter = new Formatter() {
+                    @Override
+                    public String format(LogRecord record) {
+
+                        String message = String.format("%-7s - %s%n",
+                                record.getLevel(),
+                                record.getMessage()
+                        );
+                        /**
+                         * Adding stack trace if any error
+                         */
+                        if (record.getThrown() != null) {
+                            StringWriter sw = new StringWriter();
+                            PrintWriter pw = new PrintWriter(sw);
+                            record.getThrown().printStackTrace(pw);
+                            message += sw + System.lineSeparator();
                         }
-                    });
-            logger.addHandler(docHandler);
+                        return message;
+                    }
+                };
+
+                @Override
+                public synchronized void publish(LogRecord record) {
+                    super.publish(record);
+                    // no buffer
+                    flush();
+                }
+
+                @Override
+                public Formatter getFormatter() {
+                    return formatter;
+                }
+            };
+
+            logger.addHandler(docExecHandler);
         }
         return new DocLog();
     }
