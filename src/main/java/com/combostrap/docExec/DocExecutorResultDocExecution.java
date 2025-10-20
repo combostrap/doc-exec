@@ -29,6 +29,9 @@ public class DocExecutorResultDocExecution implements AutoCloseable {
     @JsonIgnore
     private final List<String> warnings = new ArrayList<>();
     private boolean skipped = false;
+    /**
+     * Null so that the persistence will fail if it's still null
+     */
     private Integer exitCode = null;
 
     @JsonIgnore

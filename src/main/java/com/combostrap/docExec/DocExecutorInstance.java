@@ -157,145 +157,147 @@ public class DocExecutorInstance {
         boolean oneCodeBlockHasAlreadyRun = false;
         for (int i = 0; i < docTests.size(); i++) {
 
-            DocUnit docUnit = docTests.get(i);
-            DocUnit cachedDocUnit = null;
-            if (cachedDocUnits != null && i < cachedDocUnits.size()) {
-                cachedDocUnit = cachedDocUnits.get(i);
-            }
-            // Boolean to decide if we need to execute
-            boolean codeChange = false;
-            boolean fileChange = false;
-            // ############################################
-            // The order of execution is important here to reconstruct the new document
-            //    * First the processing of the file nodes
-            //    * then the code
-            //    * then the console
-            // ############################################
+            docExecutorResultDocExecution.logInfo("Processing doc-exec node " + (i + 1));
+            try {
+                DocUnit docUnit = docTests.get(i);
+                DocUnit cachedDocUnit = null;
+                if (cachedDocUnits != null && i < cachedDocUnits.size()) {
+                    cachedDocUnit = cachedDocUnits.get(i);
+                }
+                // Boolean to decide if we need to execute
+                boolean codeChange = false;
+                boolean fileChange = false;
+                // ############################################
+                // The order of execution is important here to reconstruct the new document
+                //    * First the processing of the file nodes
+                //    * then the code
+                //    * then the console
+                // ############################################
 
-            // Replace file node with the file content on the file system
-            final List<DocFileBlock> files = docUnit.getFileBlocks();
-            if (!files.isEmpty()) {
+                // Replace file node with the file content on the file system
+                final List<DocFileBlock> files = docUnit.getFileBlocks();
+                if (!files.isEmpty()) {
 
-                for (int j = 0; j < files.size(); j++) {
+                    for (int j = 0; j < files.size(); j++) {
 
-                    DocFileBlock docFileBlock = files.get(j);
+                        DocFileBlock docFileBlock = files.get(j);
 
-                    final String fileStringPath = docFileBlock.getPath();
-                    if (fileStringPath == null) {
-                        throw new RuntimeException("The file path for this unit is null (<file type file.extension>");
-                    }
-                    // No need of cache test here because it's going very quick
-                    if (cachedDocUnit != null) {
-                        List<DocFileBlock> fileBlocks = cachedDocUnit.getFileBlocks();
-                        if (fileBlocks.size() > j) {
-                            DocFileBlock cachedDocFileBlock = fileBlocks.get(j);
-                            if (!(fileStringPath.equals(cachedDocFileBlock.getPath()))) {
-                                fileChange = true;
+                        final String fileStringPath = docFileBlock.getPath();
+                        if (fileStringPath == null) {
+                            throw new RuntimeException("The file path for this unit is null (<file type file.extension>");
+                        }
+                        // No need of cache test here because it's going very quick
+                        if (cachedDocUnit != null) {
+                            List<DocFileBlock> fileBlocks = cachedDocUnit.getFileBlocks();
+                            if (fileBlocks.size() > j) {
+                                DocFileBlock cachedDocFileBlock = fileBlocks.get(j);
+                                if (!(fileStringPath.equals(cachedDocFileBlock.getPath()))) {
+                                    fileChange = true;
+                                }
                             }
+                        } else {
+                            fileChange = true;
+                        }
+
+
+                        Path filePath = searchInlineFile(fileStringPath);
+                        String fileContent = Fs.toString(filePath);
+
+                        int start = docFileBlock.getLocationStart();
+                        targetDoc.append(originalDoc, previousEnd, start);
+
+                        docExecutorResultDocExecution.logFine("Replacing the file block");
+                        targetDoc
+                                .append(eol)
+                                .append(fileContent)
+                                .append(eol);
+
+                        previousEnd = docFileBlock.getLocationEnd();
+
+                    }
+                }
+
+                // ######################## Code Block Processing #####################
+                // Code block is not mandatory, you may just have a file
+                String code = docUnit.getCode();
+                if (code != null && !code.trim().isEmpty()) {
+                    // Check if this unit has already been executed and that the code has not changed
+                    if (cachedDocUnit != null) {
+                        if (!(code.equals(cachedDocUnit.getCode()))) {
+                            codeChange = true;
                         }
                     } else {
-                        fileChange = true;
-                    }
-
-
-                    Path filePath = searchInlineFile(fileStringPath);
-                    String fileContent = Fs.toString(filePath);
-
-                    int start = docFileBlock.getLocationStart();
-                    targetDoc.append(originalDoc, previousEnd, start);
-
-                    docExecutorResultDocExecution.logFine("Replacing the file block");
-                    targetDoc
-                            .append(eol)
-                            .append(fileContent)
-                            .append(eol);
-
-                    previousEnd = docFileBlock.getLocationEnd();
-
-                }
-            }
-
-            // ######################## Code Block Processing #####################
-            // Code block is not mandatory, you may just have a file
-            String code = docUnit.getCode();
-            if (code != null && !code.trim().isEmpty()) {
-                // Check if this unit has already been executed and that the code has not changed
-                if (cachedDocUnit != null) {
-                    if (!(code.equals(cachedDocUnit.getCode()))) {
                         codeChange = true;
                     }
-                } else {
-                    codeChange = true;
-                }
 
-                // Run
-                String result;
-                if (
-                        ((codeChange || fileChange) & cacheIsOn())
-                                || (!cacheIsOn())
-                                || oneCodeBlockHasAlreadyRun
-                ) {
-                    docExecutorResultDocExecution.logInfo("Running the code (" + Strings.onOneLine(code) + ")");
-                    try {
+                    // Run
+                    String result;
+                    if (
+                            ((codeChange || fileChange) & cacheIsOn())
+                                    || (!cacheIsOn())
+                                    || oneCodeBlockHasAlreadyRun
+                    ) {
+                        docExecutorResultDocExecution.logInfo("Running the code (" + Strings.onOneLine(code) + ")");
                         docExecutorResultDocExecution.incrementExecutionCount();
                         result = docExecutorUnit.run(docUnit);
                         docExecutorResultDocExecution.logInfo("Code executed successfully");
                         oneCodeBlockHasAlreadyRun = true;
-                    } catch (Exception e) {
-                        docExecutorResultDocExecution.setErrorStatus(e);
-                        if (docExecutor.doesStopAtFirstError()) {
-                            throw new DocFirstErrorOrWarning(e);
-                        }
-                        if (e.getClass().equals(NullPointerException.class)) {
-                            result = "null pointer exception";
-                        } else {
-                            result = e.getMessage();
-                        }
-                        docExecutorResultDocExecution.logSevere("Error during execute: " + result);
-                    }
-                } else {
-                    docExecutorResultDocExecution.logInfo("The run of the code (" + Strings.onOneLine(code) + ") was skipped due to caching");
-                    result = cachedDocUnit.getConsole();
-                }
-
-                // Console
-                DocBlockLocation consoleLocation = docUnit.getConsoleLocation();
-                if (consoleLocation != null) {
-                    int start = consoleLocation.getStart();
-                    targetDoc.append(originalDoc, previousEnd, start);
-                    String console = docUnit.getConsole();
-                    if (console == null) {
-                        throw new RuntimeException("No console were found, try a run without cache");
-                    }
-                    // The output does not have the EOL, so the console should not
-                    // <console>
-                    //   result
-                    // </console>
-                    console = console.trim();
-                    if(docExecutor.getTrimLeadingAndTrailingLines()){
-                        result = result.trim();
-                    }
-                    if (!result.equals(console)) {
-
-                        int resultLineCount = Strings.getLineCount(result.trim());
-                        int actualConsoleLineCount = Strings.getLineCount(console);
-                        if (resultLineCount < actualConsoleLineCount && docExecutor.isContentShrinkingWarning()) {
-                            String s = "A unit code produces less console lines (" + resultLineCount + ") than the actual (" + actualConsoleLineCount + ") in the page. Unit code: " + Strings.toPrintableCharacter(docUnit.getCode());
-                            docExecutorResultDocExecution.addWarning(s);
-                        }
-                        targetDoc
-                                .append(eol)
-                                .append(result)
-                                .append(eol);
-
-                        previousEnd = consoleLocation.getEnd();
-
                     } else {
+                        docExecutorResultDocExecution.logInfo("The run of the code (" + Strings.onOneLine(code) + ") was skipped due to caching");
+                        result = cachedDocUnit.getConsole();
+                    }
 
-                        previousEnd = consoleLocation.getStart();
+                    // Console
+                    DocBlockLocation consoleLocation = docUnit.getConsoleLocation();
+                    if (consoleLocation != null) {
+                        int start = consoleLocation.getStart();
+                        targetDoc.append(originalDoc, previousEnd, start);
+                        String console = docUnit.getConsole();
+                        if (console == null) {
+                            throw new RuntimeException("No console were found, try a run without cache");
+                        }
+                        // The output does not have the EOL, so the console should not
+                        // <console>
+                        //   result
+                        // </console>
+                        console = console.trim();
+                        if (docExecutor.getTrimLeadingAndTrailingLines()) {
+                            result = result.trim();
+                        }
+                        if (!result.equals(console)) {
 
+                            int resultLineCount = Strings.getLineCount(result.trim());
+                            int actualConsoleLineCount = Strings.getLineCount(console);
+                            if (resultLineCount < actualConsoleLineCount && docExecutor.isContentShrinkingWarning()) {
+                                String s = "A unit code produces less console lines (" + resultLineCount + ") than the actual (" + actualConsoleLineCount + ") in the page. Unit code: " + Strings.toPrintableCharacter(docUnit.getCode());
+                                docExecutorResultDocExecution.addWarning(s);
+                            }
+                            targetDoc
+                                    .append(eol)
+                                    .append(result)
+                                    .append(eol);
+
+                            previousEnd = consoleLocation.getEnd();
+
+                        } else {
+
+                            previousEnd = consoleLocation.getStart();
+
+                        }
                     }
                 }
+            } catch (Exception e) {
+                docExecutorResultDocExecution.setErrorStatus(e);
+                if (docExecutor.doesStopAtFirstError()) {
+                    throw new DocFirstErrorOrWarning(e);
+                }
+                String result;
+                if (e.getClass().equals(NullPointerException.class)) {
+                    result = "null pointer exception";
+                } else {
+                    result = e.getMessage();
+                }
+                docExecutorResultDocExecution.logSevere("Error during execute: " + result);
             }
         }
         targetDoc.append(originalDoc, previousEnd, originalDoc.length());
