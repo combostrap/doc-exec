@@ -1,10 +1,10 @@
 
-The generated output will have less than the console content
+The generated output will have less lines than the console content
 and should generate a warning.
 
 <unit>
 <code bash>
-echo Line 2
+echo -n Line 2
 </code>
 <console>
 Line 1

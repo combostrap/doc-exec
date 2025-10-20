@@ -235,10 +235,10 @@ public class DocExecutorInstance {
                                 || (!cacheIsOn())
                                 || oneCodeBlockHasAlreadyRun
                 ) {
-                    docExecutorResultDocExecution.logInfo("Running the code (" + DocLog.onOneLine(code) + ")");
+                    docExecutorResultDocExecution.logInfo("Running the code (" + Strings.onOneLine(code) + ")");
                     try {
                         docExecutorResultDocExecution.incrementExecutionCount();
-                        result = docExecutorUnit.run(docUnit).trim();
+                        result = docExecutorUnit.run(docUnit);
                         docExecutorResultDocExecution.logInfo("Code executed successfully");
                         oneCodeBlockHasAlreadyRun = true;
                     } catch (Exception e) {
@@ -254,7 +254,7 @@ public class DocExecutorInstance {
                         docExecutorResultDocExecution.logSevere("Error during execute: " + result);
                     }
                 } else {
-                    docExecutorResultDocExecution.logInfo("The run of the code (" + DocLog.onOneLine(code) + ") was skipped due to caching");
+                    docExecutorResultDocExecution.logInfo("The run of the code (" + Strings.onOneLine(code) + ") was skipped due to caching");
                     result = cachedDocUnit.getConsole();
                 }
 
@@ -267,15 +267,18 @@ public class DocExecutorInstance {
                     if (console == null) {
                         throw new RuntimeException("No console were found, try a run without cache");
                     }
-                    // The result does not have the EOL, so th console should not
+                    // The output does not have the EOL, so the console should not
                     // <console>
-                    //   output
+                    //   result
                     // </console>
-                    String consoleTrim = console.trim();
-                    if (!result.equals(consoleTrim)) {
+                    console = console.trim();
+                    if(docExecutor.getTrimLeadingAndTrailingLines()){
+                        result = result.trim();
+                    }
+                    if (!result.equals(console)) {
 
-                        int resultLineCount = Strings.getLineCount(result);
-                        int actualConsoleLineCount = Strings.getLineCount(consoleTrim);
+                        int resultLineCount = Strings.getLineCount(result.trim());
+                        int actualConsoleLineCount = Strings.getLineCount(console);
                         if (resultLineCount < actualConsoleLineCount && docExecutor.isContentShrinkingWarning()) {
                             String s = "A unit code produces less console lines (" + resultLineCount + ") than the actual (" + actualConsoleLineCount + ") in the page. Unit code: " + Strings.toPrintableCharacter(docUnit.getCode());
                             docExecutorResultDocExecution.addWarning(s);

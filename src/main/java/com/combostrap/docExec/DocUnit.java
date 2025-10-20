@@ -16,6 +16,7 @@ import java.util.Map;
  */
 public class DocUnit {
 
+    private int location;
     private String code;
     private String console;
     private String language;
@@ -25,6 +26,8 @@ public class DocUnit {
     private DocBlockLocation codeLocation;
     private Path path; // Path of the docFile
 
+    private DocUnit() {
+    }
 
     public static DocUnit get() {
         return new DocUnit();
@@ -133,5 +136,13 @@ public class DocUnit {
 
     public void setPath(Path path) {
         this.path = path;
+    }
+
+    public void setLocation(int location) {
+        this.location = location;
+    }
+
+    public int getLocation() {
+        return this.location;
     }
 }

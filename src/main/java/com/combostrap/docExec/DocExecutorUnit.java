@@ -1,6 +1,8 @@
 package com.combostrap.docExec;
 
+import com.combostrap.docExec.util.Strings;
 import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
 
 import javax.tools.*;
 import java.io.ByteArrayOutputStream;
@@ -78,13 +80,22 @@ public class DocExecutorUnit {
     private String eval(DocUnit docUnit) {
 
 
-        switch (docUnit.getLanguage()) {
+        String code = docUnit.getCode();
+        if (code == null) {
+            throw new IllegalArgumentException("An unit should have a code block. The unit located at position " + docUnit.getLocation() + " has no code block or the code block is not closed.");
+        }
+
+        String language = docUnit.getLanguage();
+        if (language == null) {
+            throw new IllegalArgumentException("The language of a code block is mandatory. The code block (" + Strings.onOneLine(code) + ") has no language.");
+        }
+        switch (language) {
             case "java":
-                return executeJavaCode(docUnit.getCode());
+                return executeJavaCode(code);
             case "dos":
             case "bash":
                 // A shell code can have several commands statement
-                List<String[]> commands = DocShell.parseShellCommand(docUnit, docUnit.getLanguage());
+                List<String[]> commands = DocShell.parseShellCommand(docUnit, language);
                 StringBuilder output = new StringBuilder();
                 // For each statement
                 for (String[] command : commands) {
@@ -113,7 +124,15 @@ public class DocExecutorUnit {
                         List<String> cliCommand;
                         if (docExecutor.isExecuteShellCommandViaShellBinary(binaryCliName)) {
 
-                            cliCommand = Arrays.asList("bash", "-c", docUnit.getCode());
+                            /**
+                             * Delete leading and trailing empty lines
+                             * that are created by the code block format
+                             * ie
+                             * * after the first code node, the code is normally at the line
+                             * * before the last code node, we are going at the line
+                             */
+                            String codeTrimmed = code.trim();
+                            cliCommand = Arrays.asList("bash", "-c", codeTrimmed);
 
                         } else {
 
@@ -140,12 +159,11 @@ public class DocExecutorUnit {
                             if (this.docExecutor.getCaptureStdErr()) {
                                 processExecutor.redirectError(System.out);
                             }
-                            output.append(
-                                    processExecutor
-                                            .exitValue(0)
-                                            .execute()
-                                            .outputUTF8()
-                            );
+                            ProcessResult processResult = processExecutor
+                                    .exitValue(0)
+                                    .execute();
+                            String commandOutput = processResult.outputUTF8();
+                            output.append(commandOutput);
                         } catch (IOException | InterruptedException | TimeoutException e) {
                             // Code exception is not there so we don't grow the normal application stack trace
                             // This is fired only if there is some resource errors
@@ -157,7 +175,7 @@ public class DocExecutorUnit {
                 }
                 return output.toString();
             default:
-                throw new RuntimeException("Language (" + docUnit.getLanguage() + ") not yet implemented (Found in " + docUnit.getPath() + ")");
+                throw new RuntimeException("Language (" + language + ") not yet implemented (Found in " + docUnit.getPath() + ")");
         }
 
 
@@ -346,7 +364,7 @@ public class DocExecutorUnit {
         DocSecurityManager securityManager = docExecutor.getSecurityManager();
         try {
             securityManager.setCodeIsRunning(true);
-            return eval(docUnit).trim();
+            return eval(docUnit);
         } finally {
             securityManager.setCodeIsRunning(false);
         }

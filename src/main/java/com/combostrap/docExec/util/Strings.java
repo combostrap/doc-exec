@@ -85,4 +85,9 @@ public class Strings {
                 .replaceAll("[ ]{2,10}", " ")
                 .trim(); // No double space;
     }
+
+    public static String onOneLine(String string) {
+        return string.replaceAll("\r\n|\n", " ") // No new line
+                .replaceAll(" ", " ");
+    }
 }

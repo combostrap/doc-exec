@@ -17,7 +17,7 @@ class DocExecutorUnitTest {
     public void baselineTest() {
 
         // Parsing
-        List<DocUnit> docUnits = DocParser.getDocTests("./src/test/resources/docTest/Baseline.txt");
+        List<DocUnit> docUnits = DocParser.getDocTests(Paths.get("./src/test/resources/docTest/Baseline.txt"));
         final int expected = 4;
         Assertions.assertEquals(expected, docUnits.size(), expected + " tests were found");
 
@@ -32,7 +32,7 @@ class DocExecutorUnitTest {
         String testName = "first test";
         Assertions.assertEquals("System.out.println(\"First test\");", firstDocUnit.getCode().trim(), testName + ": Code was found");
         Assertions.assertEquals("First test", firstDocUnit.getConsole().trim(), testName + ": Expectation was found");
-        Assertions.assertEquals(firstDocUnit.getConsole().trim(), docExecutorUnit.run(firstDocUnit), testName + ": Expectation and result are the same");
+        Assertions.assertEquals(firstDocUnit.getConsole().trim(), docExecutorUnit.run(firstDocUnit).trim(), testName + ": Expectation and result are the same");
         Assertions.assertEquals("java", firstDocUnit.getLanguage(), testName + ": Language is java");
         Assertions.assertEquals(Integer.valueOf(127), firstDocUnit.getConsoleLocation().getStart(), testName + " : The first index of the console is correct");
         Assertions.assertEquals(Integer.valueOf(151), firstDocUnit.getConsoleLocation().getEnd(), testName + " : The second index of the console is correct");
@@ -67,7 +67,7 @@ class DocExecutorUnitTest {
         Assertions.assertEquals("echo Hello Foo", fourthDocUnit.getCode().trim(), testName + ": Code was found");
         Assertions.assertEquals("Hello Foo", fourthDocUnit.getConsole().trim(), testName + ": Expectation is the same");
         Assertions.assertEquals("dos", fourthDocUnit.getLanguage(), testName + ": Language is dos");
-        Assertions.assertEquals(fourthDocUnit.getConsole().trim(), docExecutorUnit.run(fourthDocUnit), testName + ": Expectation and result are the same");
+        Assertions.assertEquals(fourthDocUnit.getConsole().trim(), docExecutorUnit.run(fourthDocUnit).trim(), testName + ": Expectation and result are the same");
         Assertions.assertEquals(Integer.valueOf(549), fourthDocUnit.getConsoleLocation().getStart(), testName + " : The first index of the expectation is correct");
         Assertions.assertEquals(Integer.valueOf(572), fourthDocUnit.getConsoleLocation().getEnd(), testName + " : The second index of the expectation is correct");
 
@@ -118,8 +118,9 @@ class DocExecutorUnitTest {
                 .build()
                 .getDocExecutorUnit();
 
-        Assertions.assertEquals(docUnit.getConsole().trim(), docExecutorUnit.run(docUnit), "The run and the expectations are the same ");
+        Assertions.assertEquals(docUnit.getConsole().trim(), docExecutorUnit.run(docUnit).trim(), "The run and the expectations are the same ");
 
     }
+
 
 }

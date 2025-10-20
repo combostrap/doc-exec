@@ -1,0 +1,11 @@
+
+Test if the leading and trailing empty lines are trimmed
+
+<unit>
+<code bash>
+echo -e ""; echo -e "foo"; echo -e ""
+</code>
+<console>
+foo
+</console>
+</unit>

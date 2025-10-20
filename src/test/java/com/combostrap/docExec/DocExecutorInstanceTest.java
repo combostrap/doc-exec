@@ -185,4 +185,57 @@ public class DocExecutorInstanceTest {
         Assertions.assertEquals(0, secondRun.getExitStatus());
 
     }
+
+    /**
+     * What should we do with the leading and trailing eol
+     */
+    @Test
+    public void trimLeadingTrailingEmptyLineTest() {
+
+        // Parsing
+        Path path = Paths.get("./src/test/resources/docTest/trimLeadingTrailingEmptyLines.txt");
+        List<DocUnit> docUnits = DocParser.getDocTests(path);
+        final int expected = 1;
+        Assertions.assertEquals(expected, docUnits.size(), expected + " tests were found");
+
+        /**
+         * Without leading/trailing
+         */
+        DocExecutorInstance docExecutorInstance = DocExecutor.create("test")
+                .setTrimLeadingTrailingLines(false)
+                .setDryRun(true)
+                .setEnableCache(false)
+                .build();
+
+        DocExecutorResultRun runResult = docExecutorInstance.run(path);
+        DocExecutorResultDocExecution docExecutorResultDocExecution = runResult.getDocExecutionResults().get(0);
+        String newDoc = docExecutorResultDocExecution.getNewDoc();
+        DocUnit newDocUnit = DocParser.getDocTests(newDoc, null).get(0);
+        String expectedBashOutput = "\nfoo\n\n";
+        /**
+         * The console add 2 End of line when wrapping the result
+         */
+        String eolInConsole = "\n";
+        Assertions.assertEquals(eolInConsole + expectedBashOutput + eolInConsole, newDocUnit.getConsole());
+
+        /**
+         * Trim
+         */
+        docExecutorInstance = DocExecutor.create("test")
+                .setTrimLeadingTrailingLines(true)
+                .setDryRun(true)
+                .setEnableCache(false)
+                .build();
+
+        runResult = docExecutorInstance.run(path);
+        docExecutorResultDocExecution = runResult.getDocExecutionResults().get(0);
+        newDoc = docExecutorResultDocExecution.getNewDoc();
+        newDocUnit = DocParser.getDocTests(newDoc, null).get(0);
+        expectedBashOutput = "foo";
+
+        Assertions.assertEquals(eolInConsole + expectedBashOutput + eolInConsole, newDocUnit.getConsole());
+
+
+    }
+
 }

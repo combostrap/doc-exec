@@ -29,7 +29,7 @@ public class DocShellTest {
                 .getDocExecutorUnit();
         String result = docExecutorUnit.run(docUnit);
         String console = docUnit.getConsole();
-        Assertions.assertEquals(console.trim(), result, "The run and the expectations are the same");
+        Assertions.assertEquals(console.trim(), result.trim(), "The run and the expectations are the same");
     }
 
     /**
@@ -45,7 +45,7 @@ public class DocShellTest {
                 .build()
                 .getDocExecutorUnit();
         String result = docExecutorUnit.run(docUnit);
-        Assertions.assertEquals(docUnit.getConsole().trim(), result, "The run and the expectations are the same");
+        Assertions.assertEquals(docUnit.getConsole().trim(), result.trim(), "The run and the expectations are the same");
     }
 
     @Test
@@ -87,7 +87,7 @@ public class DocShellTest {
                 .getDocExecutorUnit();
         String result = docExecutorUnit.run(docUnit);
         String console = docUnit.getConsole();
-        Assertions.assertEquals(console.trim(), result, "The run and the expectations are the same");
+        Assertions.assertEquals(console.trim(), result.trim(), "The run and the expectations are the same");
     }
 
     @Test

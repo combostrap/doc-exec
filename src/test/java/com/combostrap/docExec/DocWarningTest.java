@@ -24,6 +24,8 @@ public class DocWarningTest {
                 .setContentShrinkWarning(true)
                 // don't overwrite otherwise if we commit the file, the next time we get a success
                 .setDryRun(true)
+                // no trimming should not have any effect
+                .setTrimLeadingTrailingLines(false)
                 .setEnableCache(false)
                 .build()
                 .run(path)

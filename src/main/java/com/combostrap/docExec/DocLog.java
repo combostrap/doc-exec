@@ -1,7 +1,6 @@
 package com.combostrap.docExec;
 
 
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.logging.*;
@@ -10,11 +9,6 @@ public class DocLog {
 
     public final static Logger LOGGER = Logger.getLogger(DocLog.class.getPackageName());
 
-
-    public static String onOneLine(String string) {
-        return string.replaceAll("\r\n|\n", " ") // No new line
-                .replaceAll(" ", " ");
-    }
 
     /**
      * Init log

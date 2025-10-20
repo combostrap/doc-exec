@@ -29,6 +29,10 @@ public class DocExecutor {
     private boolean purgeCache = false;
     private Path searchDocPath = Paths.get("");
     private String resumeFrom = null;
+    /**
+     * Trim leading and trailing line in the console output
+     */
+    private boolean trimLeadingTrailingLines = true;
 
 
     /**
@@ -317,5 +321,14 @@ public class DocExecutor {
 
     public boolean getStopAtFirstErrorOrWarning() {
         return stopRunAtFirstErrorOrWarning;
+    }
+
+    public DocExecutor setTrimLeadingTrailingLines(boolean b) {
+        this.trimLeadingTrailingLines = b;
+        return this;
+    }
+
+    public boolean getTrimLeadingAndTrailingLines() {
+        return this.trimLeadingTrailingLines;
     }
 }

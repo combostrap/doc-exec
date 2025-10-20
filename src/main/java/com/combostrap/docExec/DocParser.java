@@ -25,6 +25,20 @@ public class DocParser {
      */
     static public List<DocUnit> getDocTests(Path path) {
 
+        return getDocTests(Fs.toString(path), path);
+    }
+
+    /**
+     * @param s    - the doc content
+     * @param path - a path string
+     * @return a list of doc test from a file
+     */
+    public static List<DocUnit> getDocTests(String s, Path path) {
+
+        if (s == null) {
+            throw new RuntimeException("The content is null");
+        }
+
         List<DocUnit> docUnits = new ArrayList<>();
 
 
@@ -38,12 +52,13 @@ public class DocParser {
         Pattern codeTestNodePattern = Pattern.compile("<" + codeNodeName + "(.*?)>(.*?)</" + codeNodeName + ">", Pattern.DOTALL);
         Pattern consolePattern = Pattern.compile("<" + consoleNodeName + "(.*?)>(.*?)</" + consoleNodeName + ">", Pattern.DOTALL);
         Pattern filePattern = Pattern.compile("<" + fileNodeName + "(.*?)>(.*?)</" + fileNodeName + ">", Pattern.DOTALL);
-        String s = Fs.toString(path);
+
 
         Matcher unitTestMatcher = unitTestNodePattern.matcher(s);
         while (unitTestMatcher.find()) {
 
-            DocUnit docUnit = new DocUnit();
+            DocUnit docUnit = DocUnit.get();
+            docUnit.setLocation(unitTestMatcher.start());
             docUnit.setPath(path);
             docUnits.add(docUnit);
             String unitTestProperties = unitTestMatcher.group(1);
@@ -155,17 +170,6 @@ public class DocParser {
 
 
         return docUnits;
-
-    }
-
-    /**
-     * Alias method that call {@link #getDocTests(Path)}
-     *
-     * @param path
-     * @return a list of doc test from a file
-     */
-    public static List<DocUnit> getDocTests(String path) {
-        return getDocTests(Paths.get(path));
     }
 
 }

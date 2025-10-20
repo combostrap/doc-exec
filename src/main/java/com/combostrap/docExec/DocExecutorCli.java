@@ -100,6 +100,17 @@ public class DocExecutorCli implements Callable<Integer> {
     )
     private boolean contentShrinkingWarning = true;
 
+    @CommandLine.Option(names = {
+            "--no-trim-empty-lines"},
+            /**
+             * For layout purpose, in the terminal, you may want a leading/trailing end of line
+             * but not in the doc for normalization
+            */
+            description = "Do not trim leading and trailing empty lines in a console block",
+            defaultValue = "true"
+    )
+    private boolean trimLeadingTrailingEmptyLines = true;
+
     @CommandLine.Option(names = {"-D", "--system-property"}, description = "Set system property (key=value)")
     private Map<String, String> systemProperties = new HashMap<>();
 
@@ -135,7 +146,8 @@ public class DocExecutorCli implements Callable<Integer> {
                 .setLogLevel(docExecutorCli.getLogLevel())
                 .setContentShrinkWarning(docExecutorCli.isContentShrinkingWarning())
                 .setResumeFrom(docExecutorCli.getResumeFrom())
-                .setPurgeCache(docExecutorCli.isPurgeCache());
+                .setPurgeCache(docExecutorCli.isPurgeCache())
+                .setTrimLeadingTrailingLines(docExecutorCli.getTrimLeadingTrailingLines());
 
         // Set system properties
         for (Map.Entry<String, String> entry : docExecutorCli.getSystemProperties().entrySet()) {
@@ -164,6 +176,10 @@ public class DocExecutorCli implements Callable<Integer> {
             executor.setShellCommandExecuteViaShellBinary(entry.getKey(), useBinary);
         }
         return executor;
+    }
+
+    private boolean getTrimLeadingTrailingLines() {
+        return this.trimLeadingTrailingEmptyLines;
     }
 
     private String getResumeFrom() {
