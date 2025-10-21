@@ -28,3 +28,19 @@ tasks:
       # -P for profile name
       - |
         mvn test -P slow-tests-only
+  # Install doc-exec locally
+  # The task `install` command install the jars, this one install the cli
+  install-cli:
+    cmds:
+      - |
+        {{.TASKFILE_DIR}}/contrib/script/install-cli
+  # Install the jars in the cli
+  install-cli-jars:
+    cmds:
+      - |
+        {{.TASKFILE_DIR}}/contrib/script/install-cli-jars
+  # Release the actual version
+  release:
+    cmds:
+      - |
+        {{.TASKFILE_DIR}}/contrib/script/release

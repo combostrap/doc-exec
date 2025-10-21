@@ -7,5 +7,6 @@ The execution should not add an EOL at the end
     echo foo
     </code>
     <console>
-    </console>
+foo
+</console>
 </unit>

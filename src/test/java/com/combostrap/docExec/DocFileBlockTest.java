@@ -25,9 +25,11 @@ public class DocFileBlockTest {
     Assertions.assertEquals("docFile/file.txt", docFileBlocks.get(0).getPath(), "Path is good");
     Assertions.assertEquals("txt", docFileBlocks.get(0).getLanguage(), "Language is good");
 
-    DocExecutor docExecutor = DocExecutor.create("test")
-      .setShellCommandExecuteViaMainClass("cat", DocCommandCat.class);
-    String result = DocExecutorUnit.create(docExecutor).run(docUnit);
+    DocExecutorUnit docExecutorUnit = DocExecutor.create("test")
+      .setShellCommandExecuteViaMainClass("cat", DocCommandCat.class)
+            .build()
+            .getDocExecutorUnit();
+    String result = docExecutorUnit.run(docUnit);
     Assertions.assertNotEquals(docUnit.getConsole(), result, "The run and the expectations are not the same");
 
 

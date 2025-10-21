@@ -3,14 +3,28 @@
 
 ## About
 
-A doc executor that:
-* executes code block found in the document 
-* injects optionally the output
-* inject file contents
+`doc-exec` is a tool that can:
+* parse documentation files, 
+* extract code blocks, 
+* execute them, 
+* and update the documentation with the execution result.
 
+It's similar to executable documentation tools like Jupyter notebooks but for general
+documentation formats.
 
 ## Example
 
+### With the doc-exec cli
+
+```bash
+doc-exec \
+  --doc-path /path/to/the/doc/directory \
+  --file-path /path/to/the/file/directory \
+  run \
+  relative/glob/path/to/the/doc
+```
+
+See the [DocExecutorCli Class for all options](src/main/java/com/combostrap/docExec/DocExecutorCli.java)
 
 ### Embedded as a library
 
@@ -31,76 +45,27 @@ List<DocExecutorResult> docTestRuns = DocExecutor
 See the [DocExecutor Class for all options](src/main/java/com/combostrap/docExec/DocExecutor.java)
 
 
-## Syntax
-
-A unit may have:
-  * one or more file block (to replace the content of a file, generally used in the code)
-  * zero or one code block (the code to execute)
-  * zero or one console block (to get the content of the code execution)
-
-
-## Features
-
-
-
-### Code Execution
+## Doc-Exec Execution
 
 It will:
-* scan for unit code block
-* capture the code from the child code block
-* execute it
-* replace the console block (if present) with the stdout output
+* scan for [unit node](#unit-node-syntax)
+* capture the file, code and console node
+* replace the file content if present
+* execute the code block if present and replace the console block (if present) with the result
 
+## Unit Node Syntax
 
-#### Java
-
-DocExec will create a main class and execute it without arguments.
-
-```xml
-<unit>
-    <code java>
-        System.out.println("First test");
-    </code>
-    <console>
-        First test
-    </console>
-</unit>
-```
-
-#### Shell Command (Dos, Bash)
-
-Execution Options :
-* via shell binary (ie `bash -c` default)
-* via `Java Exec` (ie parsing and passing the args to Java Exec)
-* via `Java Class` (ie parsing and passing the args to a Main Class)
-
-Shell supported:
-* Bash
-* Dos
-
-The doc must have a unit with the following format.
-
-```xml
-<unit envHOME="Whatever">
-    <file lang path/to/File>
-    </file>
-    <code dos>
-        echo ^
-          %HOME%
-    </code>
-    <console>
-        Whatever
-    </console>
-</unit>
-```
+A unit may have:
+* one or more file block (to replace the content of a file, generally used in the code)
+* zero or one code block (the code to execute)
+* zero or one console block (to get the content of the code execution)
 
 ```xml
 <unit envHOME="Whatever">
     <file lang path/to/File>
     </file>
     <code bash>
-        echo \
-         $HOME
+       echo $HOME
     </code>
     <console>
         Whatever
@@ -108,6 +73,20 @@ The doc must have a unit with the following format.
 </unit>
 ```
 
+## Lang
+### Java
+
+[Java](docs/lang-java.md)
+
+### Shell Command (Dos, Bash)
+
+[Shell](docs/lang-shell.md)
+
+## Features
+
+### Inject result of code execution
+
+It will replace the content of a console block with the result of a code execution.
 
 ### File replacement
 

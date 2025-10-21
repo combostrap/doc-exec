@@ -1,27 +1,23 @@
 package com.combostrap.docExec;
 
 
-
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Level;
+import java.util.*;
+import java.util.logging.*;
 
 
 @SuppressWarnings("unused")
 public class DocExecutor {
 
 
-    public static final String APP_NAME = DocExecutor.class.getSimpleName();
+    public static final String APP_NAME = "doc-exec";
     private final String name;
 
 
     private final DocSecurityManager securityManager;
-    public boolean captureStdErr = true;
+    private boolean captureStdErr = true;
 
-    DocCache docCache;
     private final Map<String, Class<?>> shellCommandMainClassMap = new HashMap<>();
     // The fully qualified path of the command
     // to be sure that we don't hit another command
@@ -30,13 +26,21 @@ public class DocExecutor {
     private Level logLevel = Level.INFO;
     private boolean contentShrinkingWarning = true;
     private boolean enableCache = true;
+    private boolean purgeCache = false;
+    private Path searchDocPath = Paths.get("");
+    private String resumeFrom = null;
+    /**
+     * Trim leading and trailing line in the console output
+     */
+    private boolean trimLeadingTrailingLines = true;
+
 
     /**
-     * @param overwrite If set to true, the console and the file node will be overwritten
+     * @param dryRun If set to true, the console and the file node will not be overwritten
      * @return the object for chaining
      */
-    public DocExecutor setOverwrite(boolean overwrite) {
-        this.overwrite = overwrite;
+    public DocExecutor setDryRun(boolean dryRun) {
+        this.isDryRun = dryRun;
         return this;
     }
 
@@ -49,7 +53,7 @@ public class DocExecutor {
         return this;
     }
 
-    private boolean overwrite = false;
+    private boolean isDryRun = false;
 
 
     /**
@@ -97,21 +101,18 @@ public class DocExecutor {
      * @return a DocExecutorRun instance configured with this builder
      */
     public DocExecutorInstance build() {
-        if (this.enableCache) {
-            this.docCache = DocCache.get(this.name);
-        }
         return new DocExecutorInstance(this);
     }
 
-    private Path baseFileDirectory = Paths.get(".");
+    private List<Path> searchFilePaths = List.of(Paths.get("."));
 
     /**
      * Do we stop at the first error
      */
-    private boolean stopRunAtFirstError = true;
+    private boolean stopRunAtFirstErrorOrWarning = true;
 
-    public DocExecutor setStopRunAtFirstError(boolean stopRunAtFirstError) {
-        this.stopRunAtFirstError = stopRunAtFirstError;
+    public DocExecutor setStopRunAtFirstErrorOrWarning(boolean stopRunAtFirstErrorOrWarning) {
+        this.stopRunAtFirstErrorOrWarning = stopRunAtFirstErrorOrWarning;
         return this;
     }
 
@@ -155,13 +156,18 @@ public class DocExecutor {
     }
 
     /**
-     * @param path the base path (Where do we will find the files defined in the file node)
+     * @param paths the base path (Where do we will find the files defined in the file node)
      * @return the runner for chaining instantiation
      */
-    public DocExecutor setBaseFileDirectory(Path path) {
-        this.baseFileDirectory = path;
+    public DocExecutor setSearchFilePaths(List<Path> paths) {
+        this.searchFilePaths = paths;
         return this;
     }
+
+    public DocExecutor setSearchFilePaths(Path... paths) {
+        return setSearchFilePaths(Arrays.asList(paths));
+    }
+
 
     public DocExecutor setLogLevel(Level level) {
         this.logLevel = level;
@@ -182,7 +188,7 @@ public class DocExecutor {
     }
 
     public boolean doesStopAtFirstError() {
-        return this.stopRunAtFirstError;
+        return this.stopRunAtFirstErrorOrWarning;
     }
 
     /**
@@ -248,16 +254,12 @@ public class DocExecutor {
         return name;
     }
 
-    public DocCache getDocCache() {
-        return docCache;
+    public boolean getIsDryRun() {
+        return isDryRun;
     }
 
-    public boolean isOverwrite() {
-        return overwrite;
-    }
-
-    public Path getBaseFileDirectory() {
-        return baseFileDirectory;
+    public List<Path> getSearchFilePaths() {
+        return searchFilePaths;
     }
 
     public Level getLogLevel() {
@@ -266,5 +268,67 @@ public class DocExecutor {
 
     public boolean isContentShrinkingWarning() {
         return contentShrinkingWarning;
+    }
+
+    public DocExecutor setPurgeCache(boolean purgeCache) {
+        this.purgeCache = purgeCache;
+        return this;
+    }
+
+    public boolean getPurgeCache() {
+        return purgeCache;
+    }
+
+    public DocExecutor setSearchDocPath(Path searchDocPath) {
+        if (!searchDocPath.isAbsolute()) {
+            searchDocPath = searchDocPath.toAbsolutePath();
+        }
+        this.searchDocPath = searchDocPath.normalize();
+        return this;
+    }
+
+    public Path getSearchDocPath() {
+        return this.searchDocPath;
+    }
+
+    public boolean getCaptureStdErr() {
+        return captureStdErr;
+    }
+
+    public List<String> getDocExtensions() {
+        return List.of("txt", "md");
+    }
+
+    public Path getResumeFromPath() {
+        if (this.resumeFrom == null || this.resumeFrom.isBlank()) {
+            return null;
+        }
+        if (this.searchDocPath == null) {
+            return Paths.get(this.resumeFrom);
+        }
+        return this.searchDocPath.resolve(this.resumeFrom);
+    }
+
+    public DocExecutor setResumeFrom(String resumeFrom) {
+        this.resumeFrom = resumeFrom;
+        return this;
+    }
+
+
+    public boolean getIsCacheEnabled() {
+        return enableCache;
+    }
+
+    public boolean getStopAtFirstErrorOrWarning() {
+        return stopRunAtFirstErrorOrWarning;
+    }
+
+    public DocExecutor setTrimLeadingTrailingLines(boolean b) {
+        this.trimLeadingTrailingLines = b;
+        return this;
+    }
+
+    public boolean getTrimLeadingAndTrailingLines() {
+        return this.trimLeadingTrailingLines;
     }
 }

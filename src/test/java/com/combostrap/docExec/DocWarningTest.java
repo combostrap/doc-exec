@@ -13,20 +13,26 @@ import java.nio.file.Paths;
  */
 public class DocWarningTest {
 
-  /**
-   * A code that output less content should throw a warning/error
-   */
-  @Test
-  public void warningContentShrink() {
-    final Path path = Paths.get("./src/test/resources/docTest/warning-content-shrink.txt");
+    /**
+     * A code that output less content should throw a warning/error
+     */
+    @Test
+    public void warningContentShrink() {
+        final Path path = Paths.get("./src/test/resources/docTest/warning-content-shrink.txt");
 
-    Assertions.assertThrows(DocWarning.class, () -> DocExecutor.create("test")
-      .setContentShrinkWarning(true)
-      .build()
-      .run(path)
-    );
+        DocFirstErrorOrWarning firstError = Assertions.assertThrows(DocFirstErrorOrWarning.class, () -> DocExecutor.create("test")
+                .setContentShrinkWarning(true)
+                // don't overwrite otherwise if we commit the file, the next time we get a success
+                .setDryRun(true)
+                // no trimming should not have any effect
+                .setTrimLeadingTrailingLines(false)
+                .setEnableCache(false)
+                .build()
+                .run(path)
+        );
+        Assertions.assertEquals(DocWarning.class, firstError.getCause().getClass());
 
-  }
+    }
 
 
 }
