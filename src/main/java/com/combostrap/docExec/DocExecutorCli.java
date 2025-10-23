@@ -16,7 +16,7 @@ import java.util.logging.Level;
 @Command(
         name = "doc-exec",
         mixinStandardHelpOptions = true,
-        version = "1.0.0",
+        versionProvider = DocExecutorCliVersionProvider.class,
         description = {
                 "Run code in documentation page",
         },
@@ -271,6 +271,7 @@ public class DocExecutorCli implements Callable<Integer> {
      * but it could be used in test if it was possible
      */
     protected static CommandLine getCommandLine() {
+
 
         CommandLine commandLine = new CommandLine(new DocExecutorCli())
                 .registerConverter(Level.class, new LogLevelConverter());

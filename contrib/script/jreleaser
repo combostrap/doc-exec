@@ -25,18 +25,30 @@ JRELEASER_VERSION=$(yq --exit-status '.project.properties."jreleaser.version"' "
 export JRELEASER_GITHUB_TOKEN
 JRELEASER_GITHUB_TOKEN="$(pass github/docker-registry)"
 # for the docker upload
-export JRELEASER_DOCKER_GHCR_IO_PASSWORD="$GITHUB_TOKEN"
+export JRELEASER_DOCKER_GHCR_IO_PASSWORD="$JRELEASER_GITHUB_TOKEN"
 # Same as maven (Default to out)
 export JRELEASER_OUTPUT_DIRECTORY=target
 # search the .git directory recursively
 export JRELEASER_GIT_ROOT_SEARCH=true
 # execution directory so that we can execute it from anywhere
-# PWD is direnv directory
-export JRELEASER_BASEDIR=$PWD
-if [ ! -f "$JRELEASER_BASEDIR/jreleaser.yml" ]; then
-  echo "Bad base dir for Jreleaser"
-  return 1
+export JRELEASER_BASEDIR=$PROJECT_ROOT
+
+
+# Not needed to be good with agent running locally?
+export JRELEASER_GPG_PASSPHRASE="yolo"
+
+
+# No env for config file, we add it at the command line so that we can do
+# https://jreleaser.org/guide/latest/tools/jreleaser-cli.html#_environment_variables
+JRELEASER_CONFIG_FILE="$JRELEASER_BASEDIR/jreleaser.yml"
+if [ ! -f "$JRELEASER_CONFIG_FILE" ]; then
+  echo "Config file does not exist: $JRELEASER_CONFIG_FILE"
+  exit 1
 fi
 
+# Extract command
+# Why because config file needs to be set after at the cli
+COMMAND="$1"
+shift # Removes the first argument, leaving the rest in $@
 
-"$HOME/.sdkman/candidates/jreleaser/${JRELEASER_VERSION}/bin/jreleaser" "$@"
+"$HOME/.sdkman/candidates/jreleaser/${JRELEASER_VERSION}/bin/jreleaser" "$COMMAND" --config-file="$JRELEASER_CONFIG_FILE"  "$@"

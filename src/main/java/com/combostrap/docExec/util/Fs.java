@@ -692,7 +692,7 @@ public class Fs {
      * @param name - the name of the closest path
      * @return the closest path
      */
-    public static Path closest(Path path, String name) throws FileNotFoundException {
+    public static Path closest(Path path, String name) {
 
         Path resolved;
         Path actual = path;
@@ -710,7 +710,7 @@ public class Fs {
             }
             actual = actual.getParent();
         }
-        throw new FileNotFoundException("No closest file was found");
+        return null;
 
     }
 

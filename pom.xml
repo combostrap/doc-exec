@@ -9,7 +9,7 @@
     <name>Combostrap Doc Exec</name>
     <groupId>com.combostrap</groupId>
     <artifactId>combostrap-doc-exec</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 
     <!-- Organization used in the manifest file as Package vendor -->
     <organization>
@@ -220,7 +220,8 @@
                                         <!--suppress MavenModelInspection -->
                                         <Git-Commit-Message-Short>${git.commit.message.short}</Git-Commit-Message-Short>
                                         <!--suppress MavenModelInspection -->
-                                        <Git-Commit-Message-Full>${git.commit.message.full}</Git-Commit-Message-Full>
+                                        <!-- Full Message create bad Manifest file because the next line does not have any leading space -->
+                                        <!-- <Git-Commit-Message-Full>${git.commit.message.full}</Git-Commit-Message-Full>-->
                                         <!--suppress MavenModelInspection -->
                                         <Git-Commit-Time>${git.commit.time}</Git-Commit-Time>
                                         <!--suppress MavenModelInspection -->
@@ -365,6 +366,8 @@
                     <skipPoms>false</skipPoms>
                     <!-- Inject the properties in all pom -->
                     <injectAllReactorProjects>true</injectAllReactorProjects>
+                    <!-- Use native git because git.tag was blank -->
+                    <useNativeGit>true</useNativeGit>
                 </configuration>
             </plugin>
             <plugin>

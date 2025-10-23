@@ -20,7 +20,7 @@ project:
     - Combostrap Team
   inceptionYear: '2025'
   copyright: '2025 Combostrap.com'
-  license: FSL without Future License
+  license: Functional Source License, Version 1.1, MIT Future License
   vendor: Combostrap
   snapshot:
     pattern: .*-SNAPSHOT
@@ -34,6 +34,9 @@ project:
   links:
     homepage: https://github.com/ComboStrap/doc-exec
     documentation: https://github.com/ComboStrap/doc-exec
+    bugTracker: https://github.com/ComboStrap/doc-exec/issues
+    # LicenseURL (Mandatory for winget)
+    license: https://spdx.org/licenses/FSL-1.1-MIT.html
   languages:
     java:
       groupId: com.combostrap
@@ -46,12 +49,13 @@ project:
 # https://jreleaser.org/guide/latest/reference/release/github.html
 release:
   github:
-    owner: combostrap
+    owner: Combostrap
     name: doc-exec
+    overwrite: true
     # We create the tag
     skipTag: true
     # When this is a draft, it won’t be seen by the public unless it’s published.
-    draft: true
+    draft: false
     # Release by default
     releaseName: "Release {{projectEffectiveVersion}}"
     prerelease:
@@ -125,10 +129,10 @@ assemble:
       targetJdks:
         - path: '{{jdkPathPrefix}}Linux/{{jdkDirectoryName}}'
           platform: 'linux-x86_64'
-      #        - path: '{{jdkPathPrefix}}Windows/{{jdkDirectoryName}}'
-      #          platform: 'windows-x86_64'
-      #        - path: '{{jdkPathPrefix}}Osx/{{jdkDirectoryName}}/Contents/Home'
-      #          platform: 'osx-x86_64'
+        - path: '{{jdkPathPrefix}}Windows/{{jdkDirectoryName}}'
+          platform: 'windows-x86_64'
+        - path: '{{jdkPathPrefix}}Osx/{{jdkDirectoryName}}/Contents/Home'
+          platform: 'osx-x86_64'
       mainJar:
         path: 'target/combostrap-doc-exec-{{projectVersion}}.jar'
       jars:
@@ -180,9 +184,20 @@ packagers:
   brew:
     active: ALWAYS
     multiPlatform: true
+  winget:
+    active: ALWAYS
   docker:
     active: ALWAYS
+    useLocalArtifact: true
+    baseImage: "debian:bookworm-slim"
+    # Git repository to push the Dockerfile to, and file
+    repository:
+      active: NEVER
+    preCommands:
+      - "RUN apt-get update -y && apt-get install unzip && rm -rf /var/lib/apt/lists/*"
     imageNames:
       - "combostrap/{{distributionName}}:{{tagName}}"
       - "combostrap/{{distributionName}}:latest"
+    registries:
+      - serverName: ghcr.io
 

@@ -2,14 +2,66 @@
 
 set -TCEeuo pipefail
 
+VERSION=1.0.0 # without snapshot
+TAG_VERSION=v$VERSION
 
-# Test
-# Create the Jar,
-# Download the jdk,
-# Move the dependencies
-mvn clean package -P release
+if [ -z "$PROJECT_NAME" ]; then
+    echo "ERROR: PROJECT_NAME environment variable is not set"
+    exit 1
+fi
+
+if [ -z "$ORGANISATION_NAME" ]; then
+    echo "ERROR: ORGANISATION_NAME environment variable is not set"
+    exit 1
+fi
+
+echo "##############################"
+echo "# Maven Clean and Test"
+echo "##############################"
+if ! mvn clean test; then
+  echo "Error where seen during the tests execution. Exiting"
+  exit 1
+fi
+
+echo "##############################"
+echo "# Version Up"
+echo "##############################"
+mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$VERSION
+git commit -am "feat(release): release version $VERSION"
+
+echo "##############################"
+echo "# Git Tag"
+echo "##############################"
+git tag -a "$TAG_VERSION" -f -m "$PROJECT_NAME $TAG_VERSION"
+
+echo "##############################"
+echo "# Maven Package"
+echo "##############################"
+# This command will:
+# * Create the Jar,
+# * Download the jdk,
+# * Move the dependencies
+if ! mvn -Dmaven.test.skip=true package -P release; then
+  echo "Error while packaging"
+  exit 1
+fi
 
 
+# Print the jar manifest
+JAR=target/${ORGANISATION_NAME}-${PROJECT_NAME}-${VERSION}.jar
+unzip -p "$JAR" META-INF/MANIFEST.MF
 
-./jreleaser release
+# assemble create the distributions
+# it's not a dependency of the release command
+jreleaser assemble
 
+# release
+jreleaser release
+
+# Docker clean
+# One-liner with || true (ignores error if image doesn't exist)
+docker image rm "${ORGANISATION_NAME}/${PROJECT_NAME}:latest" 2>/dev/null || true
+docker image rm "${ORGANISATION_NAME}/${PROJECT_NAME}:${VERSION}" 2>/dev/null || true
+
+# publish (prepare, package, publish)
+jreleaser publish
