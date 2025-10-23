@@ -16,6 +16,7 @@ documentation formats.
 
 ### With the doc-exec cli
 
+
 ```bash
 doc-exec \
   --doc-path /path/to/the/doc/directory \
@@ -100,3 +101,25 @@ It will replace the content of the file inside the file block
 
 The paths are relative to the base file directory
 
+## Installation
+
+### Brew
+
+For Linux/Windows WSL and macOS, with [brew](https://brew.sh/)
+
+```bash
+brew install combostrap/tap/doc-exec
+```
+
+### Docker
+
+With [docker releases](https://github.com/ComboStrap/doc-exec/pkgs/container/doc-exec)
+
+```bash
+docker run \
+  --rm \
+  -v $(pwd):/workspace \
+  -w /workspace \
+  ghcr.io/combostrap/doc-exec:latest \
+  doc-exec --version
+```

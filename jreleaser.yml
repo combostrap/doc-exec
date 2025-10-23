@@ -49,7 +49,8 @@ project:
 # https://jreleaser.org/guide/latest/reference/release/github.html
 release:
   github:
-    owner: Combostrap
+    # in docker, repository name must be lowercase
+    owner: combostrap
     name: doc-exec
     overwrite: true
     # We create the tag
@@ -184,20 +185,27 @@ packagers:
   brew:
     active: ALWAYS
     multiPlatform: true
+  # Publish the `winget` manifests to a git repository
+  # so that you can take them and create a pull request to the upstream
+  # https://github.com/microsoft/winget-pkgs
   winget:
-    active: ALWAYS
+    active: RELEASE
+    repository:
+      name: winget-manifests
   docker:
     active: ALWAYS
     useLocalArtifact: true
     baseImage: "debian:bookworm-slim"
-    # Git repository to push the Dockerfile to, and file
+    # Wild ! This repository will contain the Dockerfile and the distribution
     repository:
       active: NEVER
+    labels:
+      org.opencontainers.image.source: "https://{{repoHost}}/{{repoOwner}}/{{repoName}}"
     preCommands:
       - "RUN apt-get update -y && apt-get install unzip && rm -rf /var/lib/apt/lists/*"
     imageNames:
-      - "combostrap/{{distributionName}}:{{tagName}}"
-      - "combostrap/{{distributionName}}:latest"
+      - "ghcr.io/combostrap/{{distributionName}}:{{tagName}}"
+      - "ghcr.io/combostrap/{{distributionName}}:latest"
     registries:
       - serverName: ghcr.io
 
