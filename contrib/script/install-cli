@@ -7,20 +7,6 @@ CLI_NAME=${1-${PROJECT_NAME}}
 CLI_HOME=${CLI_HOME:-/opt/${CLI_NAME}}
 
 
-find_git_root() {
-  local dir="$PWD"
-  while [[ "$dir" != "/" ]]; do
-    if [[ -d "$dir/.git" ]]; then
-      echo "$dir"
-      return 0
-    fi
-    dir="$(dirname "$dir")"
-  done
-  echo "No .git directory found in any parent directory." >&2
-  return 1
-}
-
-
 # Get, check if the parent directory exists
 parent_dir=$(dirname "${CLI_HOME}")
 if [[ ! -d "${parent_dir}" ]]; then
@@ -44,9 +30,7 @@ if [[ "${path_owner}" != "${current_user}" ]]; then
   exit 1
 fi
 
-# Determine the IDE project root
-# and install the archive
-PROJECT_ROOT=$(find_git_root)
+# Go to the IDE project root and install the archive
 (cd "$PROJECT_ROOT"; mvn install -DskipTests)
 
 

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -TCEeuo pipefail
+
+# release
+jreleaser release
+
+# Docker clean
+# One-liner with || true (ignores error if image doesn't exist)
+docker image rm "${PROJECT_ORGANISATION_NAME}/${PROJECT_NAME}:latest" 2>/dev/null || true
+docker image rm "${PROJECT_ORGANISATION_NAME}/${PROJECT_NAME}:${VERSION}" 2>/dev/null || true
+
+# publish (prepare, package, publish)
+jreleaser publish

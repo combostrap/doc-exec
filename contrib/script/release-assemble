@@ -2,18 +2,26 @@
 
 set -TCEeuo pipefail
 
-VERSION=1.0.0 # without snapshot
-TAG_VERSION=v$VERSION
-
 if [ -z "$PROJECT_NAME" ]; then
     echo "ERROR: PROJECT_NAME environment variable is not set"
     exit 1
 fi
 
-if [ -z "$ORGANISATION_NAME" ]; then
-    echo "ERROR: ORGANISATION_NAME environment variable is not set"
+if [ -z "$PROJECT_ORGANISATION_NAME" ]; then
+    echo "ERROR: PROJECT_ORGANISATION_NAME environment variable is not set"
     exit 1
 fi
+
+if [ -z "$PROJECT_ROOT" ]; then
+    echo "ERROR: PROJECT_ROOT environment variable is not set"
+    exit 1
+fi
+
+export JRELEASER_PROJECT_VERSION
+JRELEASER_PROJECT_VERSION=$(yq --exit-status '.project.version' "$PROJECT_ROOT/pom.xml")
+VERSION="$JRELEASER_PROJECT_VERSION" # without snapshot
+TAG_VERSION=v$VERSION
+
 
 echo "##############################"
 echo "# Maven Clean and Test"
@@ -26,7 +34,7 @@ fi
 echo "##############################"
 echo "# Version Up"
 echo "##############################"
-mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$VERSION
+mvn versions:set -DgenerateBackupPoms=false -DnewVersion="$VERSION"
 git commit -am "feat(release): release version $VERSION"
 
 echo "##############################"
@@ -48,20 +56,10 @@ fi
 
 
 # Print the jar manifest
-JAR=target/${ORGANISATION_NAME}-${PROJECT_NAME}-${VERSION}.jar
+JAR=target/${PROJECT_ORGANISATION_NAME}-${PROJECT_NAME}-${VERSION}.jar
 unzip -p "$JAR" META-INF/MANIFEST.MF
 
 # assemble create the distributions
 # it's not a dependency of the release command
 jreleaser assemble
 
-# release
-jreleaser release
-
-# Docker clean
-# One-liner with || true (ignores error if image doesn't exist)
-docker image rm "${ORGANISATION_NAME}/${PROJECT_NAME}:latest" 2>/dev/null || true
-docker image rm "${ORGANISATION_NAME}/${PROJECT_NAME}:${VERSION}" 2>/dev/null || true
-
-# publish (prepare, package, publish)
-jreleaser publish

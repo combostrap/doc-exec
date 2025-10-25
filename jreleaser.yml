@@ -148,11 +148,12 @@ assemble:
       mainJar:
         path: '{{baseOutputDirectory}}/{{projectJavaArtifactId}}-{{projectVersion}}.jar'
       jars:
-        # The jars are copied via maven with the release profile in the deps directory
+        # The dependency jars are copied via maven with the release profile in the deps directory
         - pattern: '{{baseOutputDirectory}}/{{depsPrefix}}/*.jar'
       swid:
         tagRef: swid-tag
   # https://jreleaser.org/guide/latest/reference/assemble/jpackage.html#_jlink_jpackage
+  # https://github.com/jreleaser/jreleaser/blob/6979e56816f3293720868ef3f90e55a6eb51d8d8/jreleaser.yml#L225
   jpackage:
     doc-exec-installer:
       # jPackage tool create only native installers for the platform it's running on

@@ -10,20 +10,6 @@ CLI_NAME=${1-${PROJECT_NAME}}
 CLI_HOME=${CLI_HOME:-/opt/${CLI_NAME}}
 TARGET_DIR="${CLI_HOME}/jars"
 
-find_git_root() {
-  local dir="$PWD"
-  while [[ "$dir" != "/" ]]; do
-    if [[ -d "$dir/.git" ]]; then
-      echo "$dir"
-      return 0
-    fi
-    dir="$(dirname "$dir")"
-  done
-  echo "No .git directory found in any parent directory." >&2
-  return 1
-}
-
-
 
 echo "Starting Maven dependencies extraction..."
 echo "Target directory: $TARGET_DIR"
@@ -36,7 +22,6 @@ echo "Creating directory: $TARGET_DIR"
 mkdir -p "$TARGET_DIR"
 
 echo "Install all jars..."
-PROJECT_ROOT=$(find_git_root)
 (cd "$PROJECT_ROOT"; mvn install -DskipTests)
 
 # Copy dependencies to target directory
