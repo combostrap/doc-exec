@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Generate the MSI file from a WSL platform
+# Yes it's possible
+
+set -TCEeuo pipefail
+
+# Test From WSL
+## Creating JPackage Inputs
+## Creating the runtime-image dir
+JPACKAGE_DIR="$PROJECT_ROOT/target/jreleaser/assemble/doc-exec-installer/jpackage"
+WINDOWS_PLATFORM_SUFFIX="windows-x86_64"
+JPACKAGE_WINDOWS_DIR="$JPACKAGE_DIR/work-$WINDOWS_PLATFORM_SUFFIX"
+JPACKAGE_RUNTIME_IMAGE_DIR="$JPACKAGE_WINDOWS_DIR/runtime-image"
+JLINK_DIR="$PROJECT_ROOT/target/jreleaser/assemble/doc-exec-standalone/jlink"
+WINDOWS_DISTRIBUTION_NAME="doc-exec-standalone-$JRELEASER_PROJECT_VERSION-$WINDOWS_PLATFORM_SUFFIX"
+WORK_DIRECTORY="work-$WINDOWS_PLATFORM_SUFFIX"
+JLINK_RUNTIME_IMAGE_DIR="$JLINK_DIR/$WORK_DIRECTORY/$WINDOWS_DISTRIBUTION_NAME"
+mkdir -p "$JPACKAGE_RUNTIME_IMAGE_DIR"
+cp -rf "$JLINK_RUNTIME_IMAGE_DIR" "$JPACKAGE_WINDOWS_DIR"
+mv "$JPACKAGE_WINDOWS_DIR/$WINDOWS_DISTRIBUTION_NAME" "$JPACKAGE_RUNTIME_IMAGE_DIR"
+## Creating the inputs dir
+JPACKAGE_INPUTS_DIR="$JPACKAGE_WINDOWS_DIR/inputs"
+mkdir -p "$JPACKAGE_INPUTS_DIR"
+mv "$JPACKAGE_RUNTIME_IMAGE_DIR/jars" "$JPACKAGE_INPUTS_DIR/files"
+
+# Jpackage do not understand wsl path for output
+# Destination directory \\wsl.localhost\Debian\...\jpackage is not writable
+# But giving a Windows Path and it works
+JPACKAGE_MSI_WINDOWS_DESTINATION="C:\tmp"
+
+/tmp/jdks/temurinWindows/jdk-17.0.16+8/bin/jpackage.exe \
+    --type msi \
+    --dest  "$JPACKAGE_MSI_WINDOWS_DESTINATION" \
+    --input "$JPACKAGE_DIR/$WORK_DIRECTORY/inputs/files" \
+    --name doc-exec \
+    --runtime-image "$JPACKAGE_RUNTIME_IMAGE_DIR" \
+    --app-version "$JRELEASER_PROJECT_VERSION" \
+    --vendor Combostrap \
+    --copyright "2025 Combostrap.com" \
+    --description "ComboStrap Doc Exec" \
+    --main-class com.combostrap.docExec.DocExecutorCli \
+    --main-jar "combostrap-doc-exec-$JRELEASER_PROJECT_VERSION.jar" \
+    --win-console \
+    --win-dir-chooser
+# --icon "$JPACKAGE_DIR/work-windows-x86_64/inputs/doc-exec-installer.ico"
+
+# Copy the MSI file back to WSL
+JPACKAGE_MSI_WSL_DESTINATION="/mnt/c/tmp" # The msi destination path but on its WSL way
+SOURCE_WINDOWS_MSI_FILE="doc-exec-$JRELEASER_PROJECT_VERSION.msi"
+TARGET_WINDOWS_MSI_FILE="doc-exec-$JRELEASER_PROJECT_VERSION-$WINDOWS_PLATFORM_SUFFIX.msi"
+cp "$JPACKAGE_MSI_WSL_DESTINATION/$SOURCE_WINDOWS_MSI_FILE" "$JPACKAGE_DIR/$TARGET_WINDOWS_MSI_FILE"

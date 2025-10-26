@@ -8,6 +8,7 @@ environment:
     jdkDirectoryName: 'jdk-17.0.16+8'
     # The jars are copied via maven with the release profile in the deps directory
     depsPrefix: 'deps'
+    maintainer: 'nico@combostrap.com'
 
 # https://jreleaser.org/guide/latest/reference/project.html
 project:
@@ -54,10 +55,7 @@ release:
     owner: combostrap
     name: doc-exec
     # Overwrite will delete
-    overwrite: false
-    # Appends artifacts to an existing release with matching tag, useful when `overwrite` is set to `false`.
-    update:
-      enabled: true
+    overwrite: true
     # We create the tag
     skipTag: true
     # When this is a draft, it won’t be seen by the public unless it’s published.
@@ -168,12 +166,21 @@ assemble:
         vendor: Combostrap
       linux:
         types: [ rpm, deb ]
+        maintainer: '{{maintainer}}'
+        icon: 'src/media/combostrap-icon-256x256.png'
       osx:
-        types: [ dmg ]
+        types: [ pkg ]
+        appName: DocExec
+        packageName: doc-exec
+        packageIdentifier: com.combostrap.doc-exec
+        icon: 'src/media/jreleaser.icns'
+        resourceDir: 'src/jpackage/osx'
       windows:
         types: [ msi ]
         console: true # this is a console app
         dirChooser: true # The wizard will open
+        resourceDir: "src/main/jpackage/windows-resource-dir"
+        icon: "src/media/combostrap.ico"
 
 
 # Distributions is a list of assembly with packagers meta
