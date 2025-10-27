@@ -3,6 +3,7 @@
 set -TCEeuo pipefail
 
 # release
+rm -rf target/jreleaser/signatures
 jreleaser release
 
 # Docker clean

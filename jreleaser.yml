@@ -1,4 +1,5 @@
 # Bug in idea, you need to download and map the schema to the below file
+# curl https://jreleaser.org/schema/jreleaser-schema-1.17.0.json -o target/jreleaser-schema-1.17.0.json
 # $schema: https://jreleaser.org/schema/jreleaser-schema-1.17.0.json
 
 environment:
@@ -8,10 +9,10 @@ environment:
     jdkDirectoryName: 'jdk-17.0.16+8'
     # The jars are copied via maven with the release profile in the deps directory
     depsPrefix: 'deps'
+    maintainer: 'nico@combostrap.com'
 
 # https://jreleaser.org/guide/latest/reference/project.html
 project:
-  # Used also as cli name
   name: doc-exec
   #version: '{{projectVersion}}'
   description: ComboStrap Doc Exec
@@ -22,7 +23,7 @@ project:
   inceptionYear: '2025'
   copyright: '2025 Combostrap.com'
   license: Functional Source License, Version 1.1, MIT Future License
-  vendor: Combostrap
+  vendor: 'combostrap' # used in package identifier in winget so lowercase
   snapshot:
     pattern: .*-SNAPSHOT
     # This is the default version value (used in bash script to get the final assembly name)
@@ -50,14 +51,9 @@ project:
 # https://jreleaser.org/guide/latest/reference/release/github.html
 release:
   github:
-    # in docker, repository name must be lowercase
-    owner: combostrap
+    owner: combostrap # in docker, repository name must be lowercase
     name: doc-exec
-    # Overwrite will delete
-    overwrite: false
-    # Appends artifacts to an existing release with matching tag, useful when `overwrite` is set to `false`.
-    update:
-      enabled: true
+    overwrite: true # Overwrite will delete the release
     # We create the tag
     skipTag: true
     # When this is a draft, it won’t be seen by the public unless it’s published.
@@ -106,8 +102,24 @@ release:
       replacers:
         - search: '\[chore\] '
 
-# Execute it with `jreleaser assemble`
+# Assemble create artifacts that can be distributed
+# Distribution uses them to define the set of artifacts in the release
 assemble:
+  # Execute it with `jreleaser assemble --assembler javaArchive`
+  javaArchive:
+    doc-exec:
+      active: ALWAYS
+      formats:
+        - ZIP
+        - TAR
+      mainJar:
+        path: '{{baseOutputDirectory}}/{{projectJavaArtifactId}}-{{projectVersion}}.jar'
+      jars:
+        # The dependency jars are copied via maven with the release profile in the deps directory
+        - pattern: '{{baseOutputDirectory}}/{{depsPrefix}}/*.jar'
+      swid:
+        tagRef: swid-tag
+  # Execute it with `jreleaser assemble --assembler jlink`
   # https://jreleaser.org/guide/latest/reference/assemble/jlink.html
   jlink:
     # The assembly Name is used in the name of the assembly
@@ -115,7 +127,7 @@ assemble:
     doc-exec-standalone:
       active: ALWAYS
       imageName: '{{distributionName}}-{{projectEffectiveVersion}}'
-      executable: doc-exec
+      executable: 'doc-exec' # no template cna be used here
       jdeps:
         multiRelease: '11'
         ignoreMissingDeps: true
@@ -161,33 +173,82 @@ assemble:
       active: RELEASE
       jlink: doc-exec-standalone # jlink assembly name
       attachPlatform: true # true in Jreleaser.yml file, false otherwise.
-      exported: false # in Jreleaser.yml file, ???
+      exported: false # when false, the assembled artifacts are not part of the release if they are not defined in the distributions
       applicationPackage:
         appName: '{{projectName}}' # Name of the cli
-        appVersion: '{{projectVersionNumber}}'
-        vendor: Combostrap
       linux:
         types: [ rpm, deb ]
+        maintainer: '{{maintainer}}'
+        icon: 'src/main/media/combostrap-icon-256x256.png'
       osx:
-        types: [ dmg ]
+        types: [ pkg ]
+        appName: DocExec
+        packageName: doc-exec
+        packageIdentifier: com.combostrap.doc-exec
+        resourceDir: 'src/main/jpackage/osx'
+      # Windows:
+      # Create the MSI on Windows Powershell:
+      #     jreleaser assemble --debug --select-current-platform --assembler=jpackage
+      # Check your MSI
+      #     msiexec /i target\jreleaser\assemble\doc-exec-installer\jpackage\doc-exec-1.0.0-windows-x86_64.msi /l*v target/msi-logfile.txt
+      # Delete
+      #     msiexec /x target\jreleaser\assemble\doc-exec-installer\jpackage\doc-exec-1.0.0-windows-x86_64.msi /l*v target/msi-uninstall-logfile.txt
       windows:
         types: [ msi ]
         console: true # this is a console app
         dirChooser: true # The wizard will open
+        resourceDir: "src/main/jpackage/windows-resource-dir"
+        icon: "src/main/media/combostrap.ico"
+        perUserInstall: true # Why? No space by default in the path, `C:\Users\user\AppData\Local\doc-exec\`
 
 
 # Distributions is a list of assembly with packagers meta
 # It defines artifacts that may be published using supported packages and announced with supported announcers.
 distributions:
+  # Java Archive Distributions
+  doc-exec:
+    scoop:
+      active: ALWAYS
+      continueOnError: true
+      repository:
+        active: RELEASE
+    spec:
+      active: ALWAYS
+      continueOnError: true
+      repository:
+        active: RELEASE
+        name: jreleaser-copr
+    artifacts:
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec/java-archive/{{projectName}}-{{projectVersion}}.zip'
+        transform: '{{projectName}}/{{projectName}}-{{projectEffectiveVersion}}.zip'
+        extraProperties:
+          skipSpec: 'true'
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec/java-archive/{{projectName}}-{{projectVersion}}.tar'
+        transform: '{{projectName}}/{{projectName}}-{{projectEffectiveVersion}}.tar'
+        extraProperties:
+          skipFlatpak: 'true'
   doc-exec-standalone:
     # Take the default value from the `assemble` node
     # See with:
     # jreleaser config --quiet  | grep -A 40 '^distributions' | yq
     # grep because the output is not accepted by yq
     type: JLINK
+    # Run it with
+    # jreleaser prepare --debug -p=brew
     brew:
       active: ALWAYS
       multiPlatform: true
+    # Run it with
+    # jreleaser prepare --debug -p=chocolatey
+    chocolatey:
+      active: ALWAYS
+      continueOnError: true
+      remoteBuild: true
+      title: 'Doc Execution'
+      iconUrl: 'https://rawcdn.githack.com/ComboStrap/site-com-combostrap/fcae9343885f4b6e4e8f977a05cb7353e84c3c8c/data/media/android-chrome-192x192.png'
+      packageName: 'doc-exec' # no template (name of the package, ie name of the application)
+      repository:
+        active: RELEASE
     docker:
       active: ALWAYS
       useLocalArtifact: true
@@ -199,6 +260,8 @@ distributions:
         org.opencontainers.image.source: "https://{{repoHost}}/{{repoOwner}}/{{repoName}}"
       preCommands:
         - "RUN apt-get update -y && apt-get install unzip && rm -rf /var/lib/apt/lists/*"
+      postCommands:
+        - 'VOLUME /workspace' # working directory
       imageNames:
         - "ghcr.io/combostrap/{{distributionName}}:{{tagName}}"
         - "ghcr.io/combostrap/{{distributionName}}:latest"
@@ -207,6 +270,15 @@ distributions:
   # Installer distributions
   doc-exec-installer:
     type: NATIVE_PACKAGE
+    executable:
+      name: "doc-exec" # used in the winget manifest, not a template
+    # To test winget:
+    # * on WSL, upload the artifacts generate the manifests:
+    #    jreleaser release
+    #    jreleaser prepare --debug -p=winget
+    # * on Windows, validate and install them
+    #    winget validate --manifest \\wsl.localhost\xxx\doc-exec\target\jreleaser\prepare\doc-exec-installer\winget\manifests\c\combostrap\doc-exec\1.0.0
+    #    winget install --manifest \\wsl.localhost\xxx\doc-exec\target\jreleaser\prepare\doc-exec-installer\winget\manifests\c\combostrap\doc-exec\1.0.0
     winget:
       active: RELEASE
       continueOnError: true
@@ -217,9 +289,15 @@ distributions:
         name: winget-manifests
         commitMessage: 'Doc Exec {{tagName}}'
     artifacts:
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}-{{projectVersion}}-{{artifactPlatform}}.msi'
-        transform: '{{distributionName}}/{{distributionName}}-{{projectEffectiveVersion}}-windows-x86_64.msi'
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}-{{projectVersionNumber}}-{{artifactPlatform}}.msi'
+        transform: '{{distributionName}}/{{distributionName}}-{{projectEffectiveVersion}}-{{artifactPlatform}}.msi'
         platform: 'windows-x86_64'
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}_{{projectVersionNumber}}-1_amd64.deb'
+        transform: '{{distributionName}}/{{distributionName}}-{{projectEffectiveVersion}}-{{artifactPlatform}}.deb'
+        platform: 'linux-x86_64'
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}-{{projectVersionNumber}}-1.x86_64.rpm'
+        transform: '{{distributionName}}/{{distributionName}}-{{projectEffectiveVersion}}-{{artifactPlatform}}.rpm'
+        platform: 'linux-x86_64'
 
 # Create a software BOM (works only for non-snapshot)
 catalog:

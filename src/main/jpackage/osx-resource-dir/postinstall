@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+
+# Create the executable symlink into /usr/local/bin
+# based on https://github.com/jreleaser/jreleaser/blob/main/src/jpackage/osx/postinstall
+
+TARGET_DIR="/usr/local/bin"
+
+if [ ! -d $TARGET_DIR ]
+then
+    mkdir -p $TARGET_DIR
+fi
+
+ln -Ffs "$2/DocExec.app/Contents/MacOS/DocExec" "$TARGET_DIR/doc-exec"
+
+exit 0

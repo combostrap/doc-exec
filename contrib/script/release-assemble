@@ -35,7 +35,12 @@ echo "##############################"
 echo "# Version Up"
 echo "##############################"
 mvn versions:set -DgenerateBackupPoms=false -DnewVersion="$VERSION"
-git commit -am "feat(release): release version $VERSION"
+if [[ -n $(git status -s) ]]; then
+  echo "Git is dirty"
+  git commit -am "feat(release): release version $VERSION"
+else
+  echo "Git is not dirty"
+fi
 
 echo "##############################"
 echo "# Git Tag"
