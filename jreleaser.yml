@@ -238,6 +238,7 @@ distributions:
     brew:
       active: ALWAYS
       multiPlatform: true
+      formulaName: 'doc-exec'
     # Run it with
     # jreleaser prepare --debug -p=chocolatey
     chocolatey:

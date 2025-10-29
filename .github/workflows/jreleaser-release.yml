@@ -1,0 +1,68 @@
+name: Release
+# Ref: https://raw.githubusercontent.com/jreleaser/helloworld-java-jpackage/refs/heads/main/.github/workflows/release.yml
+
+on:
+  workflow_dispatch:
+
+# Constant for entire workflow
+env:
+  JRELEASER_JPACKAGE_ASSEMBLY_NAME: 'doc-exec-installer' # The jpackage assembly name
+  JRELEASER_JLINK_ASSEMBLY_NAME: 'doc-exec-standalone' # The jlink assembly name
+  JRELEASER_OUT_DIRECTORY: 'target'
+
+jobs:
+
+  assemble:
+    uses: ./.github/workflows/jreleaser-assemble.yml
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [ assemble ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Properties
+        id: props
+        shell: bash
+        run: |
+          PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download Jpackage Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jpackage-*
+          merge-multiple: true # download them to the same directory
+          path: ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage
+
+      - name: Download Jlink Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jlink-*
+          merge-multiple: true # download them to the same directory
+          path: ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink
+
+      - name: Display structure of downloaded files
+        run: ls -R
+
+      - name: Release
+        uses: jreleaser/release-action@v2
+        with:
+          arguments: full-release
+        env:
+          JRELEASER_PROJECT_VERSION: ${{ steps.props.outputs.project_version }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: JReleaser output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          name: jreleaser-release
+          path: |
+            ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/trace.log
+            ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/output.properties

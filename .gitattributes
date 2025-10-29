@@ -1,0 +1,5 @@
+# all files LF due to heredoc
+* text=auto eol=lf
+
+# Exception: mvnw uses CRLF (Windows line endings)
+mvnw.cmd text eol=crlf
