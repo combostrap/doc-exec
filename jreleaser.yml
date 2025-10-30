@@ -4,9 +4,6 @@
 
 environment:
   properties:
-    jdkPathPrefix: 'jdks/temurin'
-    jdkVersion: '17.0.16'
-    jdkDirectoryName: 'jdk-17.0.16+8'
     # The jars are copied via maven with the release profile in the deps directory
     depsPrefix: 'deps'
     maintainer: 'nico@combostrap.com'
@@ -44,7 +41,6 @@ project:
       groupId: com.combostrap
       artifactId: combostrap-doc-exec
       mainClass: com.combostrap.docExec.DocExecutorCli
-      version: '16.0.2'
   stereotype: CLI
 
 # Create a GitHub release
@@ -102,32 +98,44 @@ release:
       replacers:
         - search: '\[chore\] '
 
+platform:
+  replacements:
+    # used by GitHub and does not suck
+    aarch_64: arm64
+    x86_64: x64
+    osx: macos
+
 # Assemble create artifacts that can be distributed
 # Distribution uses them to define the set of artifacts in the release
 assemble:
   # Execute it with `jreleaser assemble --assembler javaArchive`
   javaArchive:
-    doc-exec:
+    doc-exec-nojre:
       active: ALWAYS
+      exported: false # we define the distribution in the distribution section
+      # Name: ie combostrap-doc-exec-1.0.0-nojre.zip or tar
+      archiveName: '{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-nojre'
+      # Common practice is to provide both .zip and .tar.gz
       formats:
         - ZIP
-        - TAR
+        - TAR_GZ
       mainJar:
         path: '{{baseOutputDirectory}}/{{projectJavaArtifactId}}-{{projectVersion}}.jar'
       jars:
-        # The dependency jars are copied via maven with the release profile in the deps directory
-        - pattern: '{{baseOutputDirectory}}/{{depsPrefix}}/*.jar'
+        # The dependency jars are copied via maven with the deps profile
+        - pattern: '{{Env.DEPENDENCY_OUTPUT_DIRECTORY}}/*.jar'
       swid:
         tagRef: swid-tag
   # Execute it with `jreleaser assemble --assembler jlink`
   # https://jreleaser.org/guide/latest/reference/assemble/jlink.html
   jlink:
-    # The assembly Name is used in the name of the assembly
-    # Example: combostrap-early-access-linux-x86_64.zip
-    doc-exec-standalone:
+    # The assembly Name is used in the name of the distribution (distributionName)
+    # Example: doc-exec-jre-early-access-linux-x86_64.zip
+    doc-exec-jre:
       active: ALWAYS
-      imageName: '{{distributionName}}-{{projectEffectiveVersion}}'
-      executable: 'doc-exec' # no template cna be used here
+      imageName: '{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre'
+      executable: 'doc-exec' # no template can be used here
+      exported: false # we define the artifacts in the distribution
       jdeps:
         multiRelease: '11'
         ignoreMissingDeps: true
@@ -150,13 +158,20 @@ assemble:
         # When compiling, Error: No file system provider is available to handle this file: /opt/doc-exec/jars/lanterna-3.1.3.jar
         - 'jdk.zipfs'
       targetJdks:
-        # Env.TMP = java.io.tmpdir
-        - path: '{{Env.TMP}}/{{jdkPathPrefix}}Linux/{{jdkDirectoryName}}'
+        - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/linux-x64/jdk-{{Env.JDK_VERSION}}'
           platform: 'linux-x86_64'
-        - path: '{{Env.TMP}}/{{jdkPathPrefix}}Windows/{{jdkDirectoryName}}'
+        - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/linux-arm64/jdk-{{Env.JDK_VERSION}}'
+          platform: 'linux-aarch_64'
+        # Alpine (musl is used for docker image only)
+        - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/linux-musl-x64/jdk-{{Env.JDK_VERSION}}'
+          platform: 'linux-musl-aarch_64'
+        # Windows does not have any arm64 version
+        - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/windows-x64/jdk-{{Env.JDK_VERSION}}'
           platform: 'windows-x86_64'
-        - path: '{{Env.TMP}}/{{jdkPathPrefix}}Osx/{{jdkDirectoryName}}/Contents/Home'
+        - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/macos-x64/jdk-{{Env.JDK_VERSION}}/Contents/Home'
           platform: 'osx-x86_64'
+        - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/macos-arm64/jdk-{{Env.JDK_VERSION}}/Contents/Home'
+          platform: 'osx-aarch_64'
       mainJar:
         path: '{{baseOutputDirectory}}/{{projectJavaArtifactId}}-{{projectVersion}}.jar'
       jars:
@@ -171,9 +186,8 @@ assemble:
       # jPackage tool create only native installers for the platform it's running on
       # https://github.com/jreleaser/jreleaser/blob/main/.github/workflows/step-jpackage.yml
       active: RELEASE
-      jlink: doc-exec-standalone # jlink assembly name
-      attachPlatform: true # true in Jreleaser.yml file, false otherwise.
-      exported: false # when false, the assembled artifacts are not part of the release if they are not defined in the distributions
+      jlink: doc-exec-jre # jlink assembly name
+      exported: false # we define the artifacts in the distribution manually
       applicationPackage:
         appName: '{{projectName}}' # Name of the cli
       linux:
@@ -182,7 +196,7 @@ assemble:
         icon: 'src/main/media/combostrap-icon-256x256.png'
       osx:
         types: [ pkg ]
-        appName: DocExec
+        appName: doc-exec # go in the name of the package: doc-exec-1.0.0-osx-aarch_64.pkg
         packageName: doc-exec
         packageIdentifier: com.combostrap.doc-exec
         resourceDir: 'src/main/jpackage/osx'
@@ -202,37 +216,39 @@ assemble:
         perUserInstall: true # Why? No space by default in the path, `C:\Users\user\AppData\Local\doc-exec\`
 
 
-# Distributions is a list of assembly with packagers meta
+# Distributions defines the uploaded artifacts in the release
 # It defines artifacts that may be published using supported packages and announced with supported announcers.
+# https://jreleaser.org/guide/latest/reference/distributions.html
 distributions:
-  # Java Archive Distributions
-  doc-exec:
-    scoop:
-      active: ALWAYS
-      continueOnError: true
-      repository:
-        active: RELEASE
-    spec:
-      active: ALWAYS
-      continueOnError: true
-      repository:
-        active: RELEASE
-        name: jreleaser-copr
+  # Java Archive Distributions (ie JAVA_BINARY)
+  doc-exec-nojre:
+    type: JAVA_BINARY # ie java archive
     artifacts:
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec/java-archive/{{projectName}}-{{projectVersion}}.zip'
-        transform: '{{projectName}}/{{projectName}}-{{projectEffectiveVersion}}.zip'
-        extraProperties:
-          skipSpec: 'true'
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec/java-archive/{{projectName}}-{{projectVersion}}.tar'
-        transform: '{{projectName}}/{{projectName}}-{{projectEffectiveVersion}}.tar'
-        extraProperties:
-          skipFlatpak: 'true'
-  doc-exec-standalone:
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-nojre/java-archive/{{projectJavaArtifactId}}-{{projectVersion}}-nojre.zip'
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-nojre/java-archive/{{projectJavaArtifactId}}-{{projectVersion}}-nojre.tar.gz'
+  # Java Archive Distributions
+  doc-exec-jre:
     # Take the default value from the `assemble` node
     # See with:
     # jreleaser config --quiet  | grep -A 40 '^distributions' | yq
     # grep because the output is not accepted by yq
     type: JLINK
+    artifacts:
+      # used by brew
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
+        platform: 'linux-x86_64'
+      # used by brew
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
+        platform: 'linux-aarch_64'
+      # used by brew
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
+        platform: 'osx-x86_64'
+      # used by brew
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
+        platform: 'osx-aarch_64'
+      # used by chocolatey
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
+        platform: 'windows-x86_64'
     # Run it with
     # jreleaser prepare --debug -p=brew
     brew:
@@ -253,21 +269,23 @@ distributions:
     docker:
       active: ALWAYS
       useLocalArtifact: true
-      baseImage: "debian:bookworm-slim"
-      # Wild ! This repository will contain the Dockerfile and the distribution
-      repository:
+      repository: # Wild ! This repository will contain the Dockerfile and the distribution
         active: NEVER
       labels:
         org.opencontainers.image.source: "https://{{repoHost}}/{{repoOwner}}/{{repoName}}"
-      preCommands:
-        - "RUN apt-get update -y && apt-get install unzip && rm -rf /var/lib/apt/lists/*"
-      postCommands:
-        - 'VOLUME /workspace' # working directory
-      imageNames:
-        - "ghcr.io/combostrap/{{distributionName}}:{{tagName}}"
-        - "ghcr.io/combostrap/{{distributionName}}:latest"
       registries:
         - serverName: ghcr.io
+      specs:
+        doc-exec-alpine:
+          matchers:
+            platform: 'linux_musl-x86_64'
+          imageNames:
+            - "ghcr.io/combostrap/{{dockerSpecName}}:{{tagName}}"
+            - "ghcr.io/combostrap/{{dockerSpecName}}:latest"
+          preCommands:
+            - 'RUN apk add unzip binutils fakeroot rpm bash git'
+          postCommands:
+            - 'VOLUME /workspace' # working directory
   # Installer distributions
   doc-exec-installer:
     type: NATIVE_PACKAGE
@@ -285,20 +303,26 @@ distributions:
       continueOnError: true
       package:
         name: doc-exec
+      installer:
+        scope: USER # Why? No space by default in the path, `C:\Users\user\AppData\Local\doc-exec\`
       repository:
         active: ALWAYS
         name: winget-manifests
         commitMessage: 'Doc Exec {{tagName}}'
     artifacts:
+      # used by winget
       - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}-{{projectVersionNumber}}-{{artifactPlatform}}.msi'
-        transform: '{{distributionName}}/{{distributionName}}-{{projectEffectiveVersion}}-{{artifactPlatform}}.msi'
+        transform: '{{distributionName}}/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.msi'
         platform: 'windows-x86_64'
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}_{{projectVersionNumber}}-1_amd64.deb'
-        transform: '{{distributionName}}/{{distributionName}}-{{projectEffectiveVersion}}-{{artifactPlatform}}.deb'
-        platform: 'linux-x86_64'
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}-{{projectVersionNumber}}-1.x86_64.rpm'
-        transform: '{{distributionName}}/{{distributionName}}-{{projectEffectiveVersion}}-{{artifactPlatform}}.rpm'
-        platform: 'linux-x86_64'
+# deb and rpm are not supported for now as we need to create our own repo for distribution with apt or yum:
+# * installation on linux desktop is with brew,
+# * installation on a linux server is manual with a jlink distribution
+#      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}_{{projectVersionNumber}}-1_amd64.deb'
+#        transform: '{{distributionName}}/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.deb'
+#        platform: 'linux-x86_64'
+#      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}-{{projectVersionNumber}}-1.x86_64.rpm'
+#        transform: '{{distributionName}}/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.rpm'
+#        platform: 'linux-x86_64'
 
 # Create a software BOM (works only for non-snapshot)
 catalog:
@@ -312,3 +336,4 @@ catalog:
 signing:
   active: ALWAYS
   mode: COMMAND
+

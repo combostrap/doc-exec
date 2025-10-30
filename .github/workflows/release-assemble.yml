@@ -1,0 +1,138 @@
+name: Assemble JPackage
+# Single runner step to assemble (Jlink, JArchive, ... not JPackage)
+# Inspiration: https://github.com/jreleaser/jreleaser/blob/main/.github/workflows/step-jlink.yml
+
+# Mandatory (manual)
+on:
+  workflow_dispatch:
+
+# Constant for entire workflow
+env:
+  # The jpackage assembly name
+  # It should not change, but it's still a property
+  JRELEASER_JPACKAGE_ASSEMBLY_NAME: 'doc-exec-installer'
+  JRELEASER_JLINK_ASSEMBLY_NAME: 'doc-exec-jre'
+  JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME: 'doc-exec-nojre'
+  JRELEASER_OUT_DIRECTORY: 'target'
+
+jobs:
+  assemble:
+    name: 'Assemble'
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+
+      # Checkout
+      - name: Git Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      # Cache to not download the maven dependency between matrix run
+      # https://github.com/actions/cache/blob/main/examples.md#java---maven
+      - name: Cache local Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # Extract Properties from pom.xml
+      # This can take a long time because this is the first invocation of maven
+      # so it will download the dependencies
+      - name: Properties (Takes time as it downloads maven dependencies)
+        id: props
+        shell: bash
+        run: |
+          
+          JDK_VERSION=$(./mvnw help:evaluate -Dexpression=jdk.version -q -DforceStdout)
+          echo "jdk_version=$JDK_VERSION" >> $GITHUB_OUTPUT
+          JDK_DISTRO=$(./mvnw help:evaluate -Dexpression=jdk.distribution -q -DforceStdout)
+          echo "jdk_distro=$JDK_DISTRO" >> $GITHUB_OUTPUT
+          PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
+          JDK_DOWNLOAD_DIRECTORY=$(./mvnw help:evaluate -Dexpression=jdk.download-directory -q -DforceStdout)
+          echo "jdk_download_directory=$JDK_DOWNLOAD_DIRECTORY" >> $GITHUB_OUTPUT
+          # JDK Name - The jdk and runner id
+          # The name uses to download the jdk. It's unique by runner and unique by jdk
+          # It should be lowercase, we use the bash syntax to do that
+          # Why Node and not bash subsitution, macOS has an old bash: 3.2.57(1)-release
+          JDK_NAME=$(echo 'console.log("${{ runner.os }}-${{ runner.arch }}".toLowerCase())' | node -);
+          echo "jdk_name=${JDK_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ steps.props.outputs.jdk_version }}
+          distribution: ${{ steps.props.outputs.jdk_distro }}
+          cache: maven
+
+      # Run the jdks profile default goal with maven wrapper
+      - name: Maven Setup JDKs
+        # The shell is bash on Linux and Powershell in Windows
+        run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml -Pjdks
+
+      # Run the deps profile default goal with maven wrapper
+      # Jlink packaging needs them
+      - name: Maven Copy dependencies
+        run: ./mvnw --no-transfer-progress --batch-mode --quiet --file pom.xml -Pdeps
+
+      # Build jar
+      - name: Maven Build
+        run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml -DskipTests package
+
+      # Create Java Archive
+      - name: Java Archive Assemble
+        uses: jreleaser/release-action@v2
+        with:
+          arguments: assemble --assembler java-archive
+          setup-java: false
+        env:
+          JRELEASER_PROJECT_VERSION: ${{ steps.props.outputs.project_version }}
+          JRELEASER_OUTPUT_DIRECTORY: ${{ env.JRELEASER_OUT_DIRECTORY }}
+
+      # Upload Java Archive
+      - name: Java Archive Upload
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          name: java-archives
+          path: |
+            ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME}}/*.zip
+            ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME}}/*.tar
+
+      # Jlink and Jpackage assembly
+      - name: Jlink Archive Assemble
+        uses: jreleaser/release-action@v2
+        with:
+          arguments: assemble --assembler jlink
+          setup-java: false
+        env:
+          JRELEASER_PROJECT_VERSION: ${{ steps.props.outputs.project_version }}
+          JRELEASER_OUTPUT_DIRECTORY: ${{ env.JRELEASER_OUT_DIRECTORY }}
+          JDK_DOWNLOAD_DIRECTORY: ${{ steps.props.outputs.jdk_download_directory }}
+          JDK_VERSION: ${{ steps.props.outputs.jdk_version }}
+          JDK_DISTRO: ${{ steps.props.outputs.jdk_distro }}
+
+      # Upload Jlink native package
+      - name: Jlink Archive Upload
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          name: jlink-archives
+          path: |
+            ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink/*.zip
+
+      # Upload log
+      - name: JReleaser logs upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jreleaser-assemble-${{ steps.props.outputs.jdk_name }}
+          path: |
+            ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/trace.log
+            ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/output.properties
+

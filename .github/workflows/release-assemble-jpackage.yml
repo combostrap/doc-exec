@@ -1,4 +1,5 @@
-name: Assemble
+name: Assemble JPackage
+# Jpackage needs the original operating system (ie the installer tools and the c library) to create and compile the native package
 # Inspiration: https://github.com/jreleaser/helloworld-java-jpackage/blob/main/.github/workflows/reusable-assemble.yml
 
 # Mandatory (manual)
@@ -22,14 +23,17 @@ env:
   # It should not change, but it's still a property
   JRELEASER_JPACKAGE_ASSEMBLY_NAME: 'doc-exec-installer'
   JRELEASER_JLINK_ASSEMBLY_NAME: 'doc-exec-standalone'
+  JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME: 'doc-exec'
   JRELEASER_OUT_DIRECTORY: 'target'
 
 jobs:
   assemble:
+    # We can't put any runner context info here unfortunately
     name: 'Assemble ${{ matrix.os }}'
     strategy:
       fail-fast: false
       matrix:
+        # List: https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job#standard-github-hosted-runners-for-public-repositories
         os: ${{ fromJSON(
           inputs.os == 'all' && '["ubuntu-latest", "windows-latest", "macos-latest"]' ||
           format('["{0}"]', inputs.os)
@@ -38,13 +42,13 @@ jobs:
     steps:
 
       # Checkout
-      - name: Checkout
+      - name: Git Checkout
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref }}
           fetch-depth: 0
 
-      # Cache
+      # Cache to not download the maven dependency between matrix run
       # https://github.com/actions/cache/blob/main/examples.md#java---maven
       - name: Cache local Maven repository
         uses: actions/cache@v4
@@ -61,12 +65,21 @@ jobs:
         id: props
         shell: bash
         run: |
+          
           JDK_VERSION=$(./mvnw help:evaluate -Dexpression=jdk.version -q -DforceStdout)
           echo "jdk_version=$JDK_VERSION" >> $GITHUB_OUTPUT
           JDK_DISTRO=$(./mvnw help:evaluate -Dexpression=jdk.distribution -q -DforceStdout)
           echo "jdk_distro=$JDK_DISTRO" >> $GITHUB_OUTPUT
           PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
+          JDK_DOWNLOAD_DIRECTORY=$(./mvnw help:evaluate -Dexpression=jdk.download-directory -q -DforceStdout)
+          echo "jdk_download_directory=$JDK_DOWNLOAD_DIRECTORY" >> $GITHUB_OUTPUT
+          # JDK Name - The jdk and runner id
+          # The name uses to download the jdk. It's unique by runner and unique by jdk
+          # It should be lowercase, we use the bash syntax to do that
+          # Why Node and not bash subsitution, macOS has an old bash: 3.2.57(1)-release
+          JDK_NAME=$(echo 'console.log("${{ runner.os }}-${{ runner.arch }}".toLowerCase())' | node -);
+          echo "jdk_name=${JDK_NAME}" >> $GITHUB_OUTPUT
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -76,33 +89,22 @@ jobs:
           cache: maven
 
       # Run the jdks profile default goal with maven wrapper
-      # Why temp? temp is the root location of the jdks
-      - name: Setup JDKs
+      - name: Maven Setup JDKs
         # The shell is bash on Linux and Powershell in Windows
-        # Setting the shell to bash does not work on Windows
-        # ---
-        # We quote -Djava.io.tmpdir because `-Djava.io.tmpdir=D:\a\_temp`
-        # in Powershell is being parsed as a PowerShell parameter -<parameter_name>:<parameter_value>
-        # rather than being passed to Maven.
-        run: ./mvnw "-Djava.io.tmpdir=${{ runner.temp }}" --no-transfer-progress --batch-mode --file pom.xml -Pjdks
+        run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml -Pjdks -Djdk.name=${{ steps.props.outputs.jdk_name }}
 
       # Run the deps profile default goal with maven wrapper
       # Jlink packaging needs them
-      - name: Copy dependencies
+      - name: Maven Copy dependencies
         run: ./mvnw --no-transfer-progress --batch-mode --quiet --file pom.xml -Pdeps
 
-      # Test only on Linux
-      # On Windows, we get when calling bash in a test: `Windows Subsystem for Linux has no installed distributions`
-      - name: Test
-        if: runner.os != 'Windows'
-        run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml test
-
+      # Note on test
       # Build jar
-      - name: Build
+      - name: Maven Build
         run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml -DskipTests package
 
       # Wix v3 is needed by Jpackage
-      - name: Install WiX v3
+      - name: Winget Install WiX v3
         if: runner.os == 'Windows'
         # silent = no GUI windows, progress bars, or installer dialogs
         # force = to avoid the error: `Found an existing package already installed`
@@ -110,7 +112,7 @@ jobs:
         run: winget install -e --id WiXToolset.WiXToolset -v 3.14.1.8722 --silent --accept-source-agreements --accept-package-agreements --force
 
       # Jlink and Jpackage assembly
-      - name: Assemble
+      - name: JReleaser Assemble
         uses: jreleaser/release-action@v2
         with:
           arguments: assemble --select-current-platform
@@ -119,14 +121,16 @@ jobs:
           JRELEASER_PROJECT_VERSION: ${{ steps.props.outputs.project_version }}
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JRELEASER_OUTPUT_DIRECTORY: ${{ env.JRELEASER_OUT_DIRECTORY }}
-          TMP: ${{ runner.temp }} # temp is the root location of the jdks
+          JDK_DOWNLOAD_DIRECTORY: ${{ steps.props.outputs.jdk_download_directory }}
+          JDK_VERSION: ${{ steps.props.outputs.jdk_version }}
+          JDK_DISTRO: ${{ steps.props.outputs.jdk_distro }}
 
       # Upload log
       - name: JReleaser output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jreleaser-assemble-${{ runner.os }}-${{ runner.arch }}
+          name: jreleaser-assemble-${{ steps.props.outputs.jdk_name }}
           path: |
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/trace.log
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/output.properties
@@ -138,7 +142,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           retention-days: 1
-          name: jpackage-${{ runner.os }}-${{ runner.arch }}
+          name: jpackage-${{ steps.props.outputs.jdk_name }}
           path: |
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage/*.pkg
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage/*.msi
@@ -150,6 +154,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           retention-days: 1
-          name: jlink-${{ runner.os }}-${{ runner.arch }}
+          name: jlink-${{ steps.props.outputs.jdk_name }}
           path: |
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink/*.zip
+

@@ -23,6 +23,15 @@ export JRELEASER_BASEDIR=$PROJECT_ROOT
 # Not needed to be good with agent running locally?
 export JRELEASER_GPG_PASSPHRASE="yolo"
 
+# Jdks (used in Jlink package configuration)
+export JDK_DOWNLOAD_DIRECTORY # where the jdks are downloaded
+JDK_DOWNLOAD_DIRECTORY=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.download-directory -q -DforceStdout)
+export JDK_VERSION # jdk version
+JDK_VERSION=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.version -q -DforceStdout)
+export JDK_DISTRO # jdk distro
+JDK_DISTRO=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.distribution -q -DforceStdout)
+export DEPENDENCY_OUTPUT_DIRECTORY # jar dependency directory
+DEPENDENCY_OUTPUT_DIRECTORY=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=dependency.output-directory -q -DforceStdout)
 
 # No env for config file, we add it at the command line so that we can do
 # https://jreleaser.org/guide/latest/tools/jreleaser-cli.html#_environment_variables
