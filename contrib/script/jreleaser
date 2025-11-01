@@ -25,13 +25,13 @@ export JRELEASER_GPG_PASSPHRASE="yolo"
 
 # Jdks (used in Jlink package configuration)
 export JDK_DOWNLOAD_DIRECTORY # where the jdks are downloaded
-JDK_DOWNLOAD_DIRECTORY=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.download-directory -q -DforceStdout)
+JDK_DOWNLOAD_DIRECTORY=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.download-directory -q -DforceStdout -f "$PROJECT_ROOT/pom.xml")
 export JDK_VERSION # jdk version
-JDK_VERSION=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.version -q -DforceStdout)
+JDK_VERSION=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.version -q -DforceStdout -f "$PROJECT_ROOT/pom.xml")
 export JDK_DISTRO # jdk distro
-JDK_DISTRO=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.distribution -q -DforceStdout)
+JDK_DISTRO=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.distribution -q -DforceStdout -f "$PROJECT_ROOT/pom.xml")
 export DEPENDENCY_OUTPUT_DIRECTORY # jar dependency directory
-DEPENDENCY_OUTPUT_DIRECTORY=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=dependency.output-directory -q -DforceStdout)
+DEPENDENCY_OUTPUT_DIRECTORY=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=dependency.output-directory -q -DforceStdout -f "$PROJECT_ROOT/pom.xml")
 
 # No env for config file, we add it at the command line so that we can do
 # https://jreleaser.org/guide/latest/tools/jreleaser-cli.html#_environment_variables
@@ -45,5 +45,8 @@ fi
 # Why because config file needs to be set after at the cli
 COMMAND="$1"
 shift # Removes the first argument, leaving the rest in $@
+
+# All relative path are relative to the project root
+cd "$PROJECT_ROOT" || exit 1
 
 "$HOME/.sdkman/candidates/jreleaser/${JRELEASER_VERSION}/bin/jreleaser" "$COMMAND" --config-file="$JRELEASER_CONFIG_FILE"  "$@"

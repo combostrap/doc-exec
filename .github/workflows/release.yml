@@ -21,13 +21,13 @@ jobs:
 
   assemble:
     if: inputs.assemble == true
-    # without version (ie no @main) as it's not supported when calling local workflows
-    # note that combostrap/doc-exec/.github/workflows/jreleaser-assemble.yml@main is also working with intellisense
-    uses: ./.github/workflows/release-assemble.yml
+    # We use the full qualified name so that even if the tag is older the workflow is not
+    uses: combostrap/doc-exec/.github/workflows/release-assemble.yml@main
 
   assemble-jpackage:
     if: inputs.assemble == true
-    uses: ./.github/workflows/release-assemble-jpackage.yml # without version (ie no @main) as it's not supported when calling local workflows
+    # We use the full qualified name so that even if the tag is older the workflow is not
+    uses: combostrap/doc-exec/.github/workflows/release-assemble-jpackage.yml@main
     with:
       os: 'windows-latest'
 
@@ -74,13 +74,19 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -R
 
+      - name: Import Gpg Signing Key
+        shell: bash
+        run:
+          gpg --batch --yes --passphrase "${{ secrets.GPG_SOFTWARE_SIGNING_PASSPHRASE }}" --import <(echo "${{ secrets.GPG_SOFTWARE_SIGNING_KEY }}")
+
       - name: Release
         uses: jreleaser/release-action@v2
         with:
           arguments: full-release
         env:
-          JRELEASER_PROJECT_VERSION: ${{ steps.props.outputs.project_version }}
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_PROJECT_VERSION: ${{ steps.props.outputs.project_version }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_SOFTWARE_SIGNING_PASSPHRASE }}
 
       - name: JReleaser output
         if: always()

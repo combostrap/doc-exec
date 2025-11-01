@@ -135,7 +135,7 @@ assemble:
       active: ALWAYS
       imageName: '{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre'
       executable: 'doc-exec' # no template can be used here
-      exported: false # we define the artifacts in the distribution
+      exported: false # True is mandatory as the artifacts are used by jpackage. Even if we defined our own artifacts in the distribution (runtimeImages are missing)
       jdeps:
         multiRelease: '11'
         ignoreMissingDeps: true
@@ -164,7 +164,7 @@ assemble:
           platform: 'linux-aarch_64'
         # Alpine (musl is used for docker image only)
         - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/linux-musl-x64/jdk-{{Env.JDK_VERSION}}'
-          platform: 'linux-musl-aarch_64'
+          platform: 'linux-musl-x86_64'
         # Windows does not have any arm64 version
         - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/windows-x64/jdk-{{Env.JDK_VERSION}}'
           platform: 'windows-x86_64'
@@ -186,10 +186,13 @@ assemble:
       # jPackage tool create only native installers for the platform it's running on
       # https://github.com/jreleaser/jreleaser/blob/main/.github/workflows/step-jpackage.yml
       active: RELEASE
-      jlink: doc-exec-jre # jlink assembly name
-      exported: false # we define the artifacts in the distribution manually
+      exported: true # we define the artifacts in the distribution manually
       applicationPackage:
         appName: '{{projectName}}' # Name of the cli
+      # jlink: doc-exec-jre # jlink disabled, we could find how to solve the `runtimeImages are missing` even if jlink was exported
+      runtimeImages:
+        - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
+          platform: 'windows-x86_64'
       linux:
         types: [ rpm, deb ]
         maintainer: '{{maintainer}}'
@@ -240,6 +243,9 @@ distributions:
       # used by brew
       - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
         platform: 'linux-aarch_64'
+      # used by docker
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
+        platform: 'linux_musl-aarch_64'
       # used by brew
       - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
         platform: 'osx-x86_64'
@@ -266,6 +272,10 @@ distributions:
       packageName: 'doc-exec' # no template (name of the package, ie name of the application)
       repository:
         active: RELEASE
+    # Run ti with
+    # jreleaser assemble --debug --assembler=jlink --select-platform=linux_musl-x86_64
+    # jreleaser prepare --debug -p=docker
+    # jreleaser publish --debug -p=docker
     docker:
       active: ALWAYS
       useLocalArtifact: true
@@ -333,7 +343,10 @@ catalog:
       active: ALWAYS
 
 # Create signatures files for the distributions files and the checksum files
+# https://jreleaser.org/guide/latest/reference/signing.html
 signing:
   active: ALWAYS
-  mode: COMMAND
+  mode: COMMAND # command mode so that it's easy to run it locally
+  command:
+    keyName: 1C43E1FE21F4DF4F
 
