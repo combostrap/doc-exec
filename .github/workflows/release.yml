@@ -4,6 +4,10 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
+      ref:
+        description: 'Branch or Tag to checkout'
+        required: false
+        type: string
       assemble:
         description: 'Assemble'
         required: false
@@ -40,7 +44,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
 
       - name: Properties

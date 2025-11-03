@@ -119,7 +119,6 @@ With [docker releases](https://github.com/ComboStrap/doc-exec/pkgs/container/doc
 docker run \
   --rm \
   -v $(pwd):/workspace \
-  -w /workspace \
-  ghcr.io/combostrap/doc-exec:latest \
+  ghcr.io/combostrap/doc-exec-alpine:latest \
   doc-exec --version
 ```

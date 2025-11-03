@@ -107,8 +107,11 @@ platform:
 
 # Assemble create artifacts that can be distributed
 # Distribution uses them to define the set of artifacts in the release
+# Run it with:
+#   jreleaser assemble
 assemble:
-  # Execute it with `jreleaser assemble --assembler javaArchive`
+  # Execute it with
+  #    jreleaser assemble --assembler javaArchive
   javaArchive:
     doc-exec-nojre:
       active: ALWAYS
@@ -135,7 +138,7 @@ assemble:
       active: ALWAYS
       imageName: '{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre'
       executable: 'doc-exec' # no template can be used here
-      exported: false # True is mandatory as the artifacts are used by jpackage. Even if we defined our own artifacts in the distribution (runtimeImages are missing)
+      exported: true # We defined our own artifacts in the distribution (runtimeImages are missing)
       jdeps:
         multiRelease: '11'
         ignoreMissingDeps: true
@@ -164,7 +167,7 @@ assemble:
           platform: 'linux-aarch_64'
         # Alpine (musl is used for docker image only)
         - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/linux-musl-x64/jdk-{{Env.JDK_VERSION}}'
-          platform: 'linux-musl-x86_64'
+          platform: 'linux_musl-x86_64'
         # Windows does not have any arm64 version
         - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/windows-x64/jdk-{{Env.JDK_VERSION}}'
           platform: 'windows-x86_64'
@@ -189,14 +192,15 @@ assemble:
       exported: true # we define the artifacts in the distribution manually
       applicationPackage:
         appName: '{{projectName}}' # Name of the cli
-      # jlink: doc-exec-jre # jlink disabled, we could find how to solve the `runtimeImages are missing` even if jlink was exported
-      runtimeImages:
-        - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
-          platform: 'windows-x86_64'
-      linux:
-        types: [ rpm, deb ]
-        maintainer: '{{maintainer}}'
-        icon: 'src/main/media/combostrap-icon-256x256.png'
+      jlink: doc-exec-jre # If you encounter the error; `runtimeImages are missing`, delete the target/jreleaser directory (cache error)
+      # Linux
+      # If configured, it will work on a linux runner, so we comment out the configuration
+      # deb and rpm are not supported for now as we need to create our own repo for distribution with apt or yum
+      # linux:
+      #   types: [ rpm, deb ]
+      #   maintainer: '{{maintainer}}'
+      #   icon: 'src/main/media/combostrap-icon-256x256.png'
+      # Because OsX is configured, it will work on a macOS runner
       osx:
         types: [ pkg ]
         appName: doc-exec # go in the name of the package: doc-exec-1.0.0-osx-aarch_64.pkg
@@ -245,7 +249,7 @@ distributions:
         platform: 'linux-aarch_64'
       # used by docker
       - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
-        platform: 'linux_musl-aarch_64'
+        platform: 'linux_musl-x86_64'
       # used by brew
       - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
         platform: 'osx-x86_64'
@@ -272,28 +276,34 @@ distributions:
       packageName: 'doc-exec' # no template (name of the package, ie name of the application)
       repository:
         active: RELEASE
-    # Run ti with
-    # jreleaser assemble --debug --assembler=jlink --select-platform=linux_musl-x86_64
-    # jreleaser prepare --debug -p=docker
-    # jreleaser publish --debug -p=docker
+    # Run it with
+    # Create the assembly
+    #    jreleaser assemble --debug --assembler=jlink --select-platform=linux_musl-x86_64
+    # Create the Dockerfile
+    #    jreleaser prepare --debug -p=docker --select-platform=linux_musl-x86_64
+    # Create the image
+    #    jreleaser package --debug -p=docker --select-platform=linux_musl-x86_64
+    # Push to the registry
+    #    jreleaser publish --debug -p=docker --select-platform=linux_musl-x86_64
     docker:
       active: ALWAYS
       useLocalArtifact: true
       repository: # Wild ! This repository will contain the Dockerfile and the distribution
         active: NEVER
-      labels:
-        org.opencontainers.image.source: "https://{{repoHost}}/{{repoOwner}}/{{repoName}}"
       registries:
         - serverName: ghcr.io
       specs:
         doc-exec-alpine:
+          labels: # Labels are in the specs otherwise image title is not taken into account
+            org.opencontainers.image.source: "https://{{repoHost}}/{{repoOwner}}/{{repoName}}"
+            org.opencontainers.image.title: "{{projectName}}"
           matchers:
             platform: 'linux_musl-x86_64'
           imageNames:
             - "ghcr.io/combostrap/{{dockerSpecName}}:{{tagName}}"
             - "ghcr.io/combostrap/{{dockerSpecName}}:latest"
           preCommands:
-            - 'RUN apk add unzip binutils fakeroot rpm bash git'
+            - 'RUN apk add unzip bash'
           postCommands:
             - 'VOLUME /workspace' # working directory
   # Installer distributions

@@ -1,10 +1,15 @@
-name: Assemble JPackage
+name: Release Assemble Archives
 # Single runner step to assemble (Jlink, JArchive, ... not JPackage)
 # Inspiration: https://github.com/jreleaser/jreleaser/blob/main/.github/workflows/step-jlink.yml
 
 # Mandatory (manual)
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or Tag to checkout'
+        required: false
+        type: string
 
 # Constant for entire workflow
 env:
@@ -27,7 +32,7 @@ jobs:
       - name: Git Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
 
       # Cache to not download the maven dependency between matrix run
