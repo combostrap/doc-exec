@@ -5,6 +5,8 @@ name: Release Assemble JPackage
 # Mandatory (manual)
 on:
   workflow_dispatch:
+    # ! input have to be duplicated with workflow_call
+    # Limitations of GitHub: https://github.com/orgs/community/discussions/39357
     inputs:
       os:
         description: 'Operating System'
@@ -16,9 +18,14 @@ on:
           - windows-latest
           - macos-latest
           - all
-      ref:
-        description: 'Branch or Tag to checkout'
-        required: false
+  workflow_call:
+    # ! input have to be duplicated with workflow_dispatch
+    # Limitations of GitHub: https://github.com/orgs/community/discussions/39357
+    inputs:
+      os:
+        description: 'Operating System'
+        required: true
+        default: windows-latest
         type: string
 
 # Constant for entire workflow
@@ -29,6 +36,7 @@ env:
   JRELEASER_JLINK_ASSEMBLY_NAME: 'doc-exec-standalone'
   JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME: 'doc-exec'
   JRELEASER_OUT_DIRECTORY: 'target'
+  WORKFLOW_ID: release-assemble-jpackage # the workflow name without extension
 
 jobs:
   assemble:
@@ -49,7 +57,7 @@ jobs:
       - name: Git Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+          ref: ${{ github.ref }}
           fetch-depth: 0
 
       # Cache to not download the maven dependency between matrix run
@@ -62,28 +70,64 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
+
+      - name: Utility installation Windows
+        if: runner.os == 'Windows'
+        # silent = no GUI windows, progress bars, or installer dialogs
+        # force = to avoid the error: `Found an existing package already installed`
+        # https://learn.microsoft.com/en-us/windows/package-manager/winget/install
+        # Yq to query xml
+        run: winget install -e --id=MikeFarah.yq -v 4.48.1 --silent --accept-source-agreements --accept-package-agreements --force
+
+      # Homebrew is installed but not in the path
+      # https://github.com/actions/runner-images/issues/6283
+      - name: Homebrew Set up
+        if: runner.os != 'Windows'
+        run: echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> $GITHUB_PATH
+      - name: Homebrew Utility installation Linux/Macos
+        if: runner.os != 'Windows'
+        run: brew install yq
+
       # Extract Properties from pom.xml
-      # This can take a long time because this is the first invocation of maven
-      # so it will download the dependencies
-      - name: Properties (Takes time as it downloads maven dependencies)
+      - name: Properties
         id: props
         shell: bash
         run: |
           
-          JDK_VERSION=$(./mvnw help:evaluate -Dexpression=jdk.version -q -DforceStdout)
-          echo "jdk_version=$JDK_VERSION" >> $GITHUB_OUTPUT
-          JDK_DISTRO=$(./mvnw help:evaluate -Dexpression=jdk.distribution -q -DforceStdout)
-          echo "jdk_distro=$JDK_DISTRO" >> $GITHUB_OUTPUT
-          PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+          set -TCEeuo pipefail
+          
+          # Detect OS and set yq command
+          # to resolve `yq: command not found`
+          if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+            YQ_CMD="$LOCALAPPDATA/Microsoft/WinGet/Links/yq.exe"
+          else
+            YQ_CMD="yq"
+          fi
+          
+          # Generate the effective pom
+          POM_EFFECTIVE="${{runner.temp}}/pom-effective.xml"
+          ./mvnw help:effective-pom "-Doutput=$POM_EFFECTIVE"
+          
+          # Why yq because mvnw help:evaluate is fucking slow
+          PROJECT_VERSION=$($YQ_CMD '.project.version' "$POM_EFFECTIVE")
           echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
-          JDK_DOWNLOAD_DIRECTORY=$(./mvnw help:evaluate -Dexpression=jdk.download-directory -q -DforceStdout)
+          
+          JDK_VERSION=$($YQ_CMD '.project.properties."jdk.version"' "$POM_EFFECTIVE")
+          echo "jdk_version=$JDK_VERSION" >> $GITHUB_OUTPUT
+          
+          JDK_DISTRO=$($YQ_CMD '.project.properties."jdk.distribution"' "$POM_EFFECTIVE")
+          echo "jdk_distro=$JDK_DISTRO" >> $GITHUB_OUTPUT
+          
+          JDK_DOWNLOAD_DIRECTORY=$($YQ_CMD '.project.properties."jdk.download-directory"' "$POM_EFFECTIVE")
           echo "jdk_download_directory=$JDK_DOWNLOAD_DIRECTORY" >> $GITHUB_OUTPUT
+          
           # JDK Name - The jdk and runner id
           # The name uses to download the jdk. It's unique by runner and unique by jdk
           # It should be lowercase, we use node
           # Why Node and not bash subsitution, the macOS runner has an old bash: 3.2.57(1)-release that does not support it
           JDK_NAME=$(echo 'console.log("${{ runner.os }}-${{ runner.arch }}".toLowerCase())' | node -);
           echo "jdk_name=${JDK_NAME}" >> $GITHUB_OUTPUT
+
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -95,7 +139,8 @@ jobs:
       # Run the jdks profile default goal with maven wrapper
       - name: Maven Setup JDKs
         # The shell is bash on Linux and Powershell in Windows
-        run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml -Pjdks -Djdk.name=${{ steps.props.outputs.jdk_name }}
+        # The quotes are mandatory for Windows otherwise it will see -Djdk.name=xxx as powershell parameter
+        run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml -Pjdks "-Djdk.name=${{ steps.props.outputs.jdk_name }}"
 
       # Run the deps profile default goal with maven wrapper
       # Jlink packaging needs them
@@ -134,7 +179,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jreleaser-assemble-${{ steps.props.outputs.jdk_name }}
+          retention-days: 1 # 90 by default
+          name: jreleaser-logs-${{env.WORKFLOW_ID}}-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.jdk_name }}
           path: |
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/trace.log
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/output.properties
@@ -145,8 +191,8 @@ jobs:
       - name: Upload Jpackage Native Package
         uses: actions/upload-artifact@v4
         with:
-          retention-days: 1
-          name: jpackage-${{ steps.props.outputs.jdk_name }}
+          retention-days: 1 # 90 by default
+          name: jpackage-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.jdk_name }}
           path: |
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage/*.pkg
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage/*.msi

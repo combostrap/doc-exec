@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 
+set -TCEeuo pipefail
 
-# Be sure to generate only for the current platform
-export JRELEASER_PROJECT_VERSION
-JRELEASER_PROJECT_VERSION=$(yq --exit-status '.project.version' "$PROJECT_ROOT/pom.xml")
 
-# Jreleaser version
-JRELEASER_VERSION=$(yq --exit-status '.project.properties."jreleaser.version"' "$PROJECT_ROOT/pom.xml")
 
 export JRELEASER_GITHUB_TOKEN
-JRELEASER_GITHUB_TOKEN="$(pass github/docker-registry)"
+JRELEASER_GITHUB_TOKEN="$(pass combostrap/github/release-token)"
 # for the docker upload
 export JRELEASER_DOCKER_GHCR_IO_PASSWORD="$JRELEASER_GITHUB_TOKEN"
 # Same as maven (Default to out)
@@ -23,15 +19,26 @@ export JRELEASER_BASEDIR=$PROJECT_ROOT
 # Not needed to be good with agent running locally?
 export JRELEASER_GPG_PASSPHRASE="yolo"
 
+# We generate the pom and use yq because using `mvnw help:evaluate` is slow
+POM_EFFECTIVE="$JRELEASER_OUTPUT_DIRECTORY/pom-effective.xml"
+./mvnw help:effective-pom --quiet "-Doutput=$POM_EFFECTIVE"
+
+# Be sure to generate only for the current platform
+export JRELEASER_PROJECT_VERSION
+JRELEASER_PROJECT_VERSION=$(yq --exit-status '.project.version' "$POM_EFFECTIVE")
+
+# Jreleaser version
+JRELEASER_VERSION=$(yq --exit-status '.project.properties."jreleaser.version"' "$POM_EFFECTIVE")
+
 # Jdks (used in Jlink package configuration)
 export JDK_DOWNLOAD_DIRECTORY # where the jdks are downloaded
-JDK_DOWNLOAD_DIRECTORY=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.download-directory -q -DforceStdout -f "$PROJECT_ROOT/pom.xml")
+JDK_DOWNLOAD_DIRECTORY=$(yq --exit-status '.project.properties."jdk.download-directory"' "$POM_EFFECTIVE")
 export JDK_VERSION # jdk version
-JDK_VERSION=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.version -q -DforceStdout -f "$PROJECT_ROOT/pom.xml")
+JDK_VERSION=$(yq --exit-status '.project.properties."jdk.version"' "$POM_EFFECTIVE")
 export JDK_DISTRO # jdk distro
-JDK_DISTRO=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=jdk.distribution -q -DforceStdout -f "$PROJECT_ROOT/pom.xml")
+JDK_DISTRO=$(yq --exit-status '.project.properties."jdk.distribution"' "$POM_EFFECTIVE")
 export DEPENDENCY_OUTPUT_DIRECTORY # jar dependency directory
-DEPENDENCY_OUTPUT_DIRECTORY=$("$PROJECT_ROOT/mvnw" help:evaluate -Dexpression=dependency.output-directory -q -DforceStdout -f "$PROJECT_ROOT/pom.xml")
+DEPENDENCY_OUTPUT_DIRECTORY=$(yq --exit-status '.project.properties."dependency.output-directory"' "$POM_EFFECTIVE")
 
 # No env for config file, we add it at the command line so that we can do
 # https://jreleaser.org/guide/latest/tools/jreleaser-cli.html#_environment_variables

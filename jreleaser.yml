@@ -115,7 +115,7 @@ assemble:
   javaArchive:
     doc-exec-nojre:
       active: ALWAYS
-      exported: false # we define the distribution in the distribution section
+      exported: true # The artifacts generated will be used in the distribution called doc-exec-nojre
       # Name: ie combostrap-doc-exec-1.0.0-nojre.zip or tar
       archiveName: '{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-nojre'
       # Common practice is to provide both .zip and .tar.gz
@@ -160,6 +160,10 @@ assemble:
         - 'jdk.compiler'
         # When compiling, Error: No file system provider is available to handle this file: /opt/doc-exec/jars/lanterna-3.1.3.jar
         - 'jdk.zipfs'
+      # Jdk usage:
+      #   * used by brew: linux-x86_64, linux-aarch_64, osx-x86_64, osx-aarch_64
+      #   * used by chocolatey: windows-x86_64
+      #   * used by docker: linux_musl-x86_64
       targetJdks:
         - path: '{{Env.JDK_DOWNLOAD_DIRECTORY}}/linux-x64/jdk-{{Env.JDK_VERSION}}'
           platform: 'linux-x86_64'
@@ -189,7 +193,7 @@ assemble:
       # jPackage tool create only native installers for the platform it's running on
       # https://github.com/jreleaser/jreleaser/blob/main/.github/workflows/step-jpackage.yml
       active: RELEASE
-      exported: true # we define the artifacts in the distribution manually
+      exported: false # we define the artifacts in the distribution manually as we don't generate macOS and we rename them
       applicationPackage:
         appName: '{{projectName}}' # Name of the cli
       jlink: doc-exec-jre # If you encounter the error; `runtimeImages are missing`, delete the target/jreleaser directory (cache error)
@@ -229,10 +233,8 @@ assemble:
 distributions:
   # Java Archive Distributions (ie JAVA_BINARY)
   doc-exec-nojre:
+    # Artifacts are defined in the assembly
     type: JAVA_BINARY # ie java archive
-    artifacts:
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-nojre/java-archive/{{projectJavaArtifactId}}-{{projectVersion}}-nojre.zip'
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-nojre/java-archive/{{projectJavaArtifactId}}-{{projectVersion}}-nojre.tar.gz'
   # Java Archive Distributions
   doc-exec-jre:
     # Take the default value from the `assemble` node
@@ -240,25 +242,7 @@ distributions:
     # jreleaser config --quiet  | grep -A 40 '^distributions' | yq
     # grep because the output is not accepted by yq
     type: JLINK
-    artifacts:
-      # used by brew
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
-        platform: 'linux-x86_64'
-      # used by brew
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
-        platform: 'linux-aarch_64'
-      # used by docker
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
-        platform: 'linux_musl-x86_64'
-      # used by brew
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
-        platform: 'osx-x86_64'
-      # used by brew
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
-        platform: 'osx-aarch_64'
-      # used by chocolatey
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-jre/jlink/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.zip'
-        platform: 'windows-x86_64'
+    # Artifacts are defined in the assembly
     # Run it with
     # jreleaser prepare --debug -p=brew
     brew:
@@ -267,15 +251,28 @@ distributions:
       formulaName: 'doc-exec'
     # Run it with
     # jreleaser prepare --debug -p=chocolatey
+    # https://jreleaser.org/guide/latest/reference/packagers/chocolatey.html#_distribution_support
     chocolatey:
       active: ALWAYS
       continueOnError: true
-      remoteBuild: true
       title: 'Doc Execution'
       iconUrl: 'https://rawcdn.githack.com/ComboStrap/site-com-combostrap/fcae9343885f4b6e4e8f977a05cb7353e84c3c8c/data/media/android-chrome-192x192.png'
       packageName: 'doc-exec' # no template (name of the package, ie name of the application)
+      commitAuthor:
+        name: ReleaseBot
+        email: support@combostrap.com
+      # As seen in the doc: "package and push on CI, set remoteBuild to true"
+      # If false, chocolatey.apiKey must not be blank
+      # Why because it would perform the pack and push command immediately
+      remoteBuild: true
+      # Repo
+      # The bucket repository expects a secret named CHOCOLATEY_API_KEY
+      # as it's used by local workflow to pack and push
       repository:
         active: RELEASE
+        name: chocolatey-bucket
+        tagName: '{{projectName}}-{{tagName}}'
+        commitMessage: '{{projectName}} {{tagName}}'
     # Run it with
     # Create the assembly
     #    jreleaser assemble --debug --assembler=jlink --select-platform=linux_musl-x86_64
@@ -331,17 +328,17 @@ distributions:
         commitMessage: 'Doc Exec {{tagName}}'
     artifacts:
       # used by winget
-      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}-{{projectVersionNumber}}-{{artifactPlatform}}.msi'
+      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}-{{projectVersionNumber}}.msi'
         transform: '{{distributionName}}/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.msi'
         platform: 'windows-x86_64'
 # deb and rpm are not supported for now as we need to create our own repo for distribution with apt or yum:
 # * installation on linux desktop is with brew,
 # * installation on a linux server is manual with a jlink distribution
 #      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}_{{projectVersionNumber}}-1_amd64.deb'
-#        transform: '{{distributionName}}/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.deb'
+#        transform: '{{distributionName}}/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatformReplaced}}.deb'
 #        platform: 'linux-x86_64'
 #      - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}-{{projectVersionNumber}}-1.x86_64.rpm'
-#        transform: '{{distributionName}}/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.rpm'
+#        transform: '{{distributionName}}/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatformReplaced}}.rpm'
 #        platform: 'linux-x86_64'
 
 # Create a software BOM (works only for non-snapshot)
