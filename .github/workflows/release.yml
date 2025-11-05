@@ -30,7 +30,7 @@ concurrency:
 # permissions control what the GITHUB_TOKEN can do within the repository where the workflow is running.
 permissions:
   packages: write # Allow creating package in the same repo
-  contents: write # Allow creating a GitHub release in the same repo
+  contents: write # Allow creating/deleting a GitHub release in the same repo
 
 # Constant for entire workflow
 env:
@@ -55,7 +55,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ assemble-jpackage ]
     environment: release
-    if: always() # run even if we don't require the assembly
     steps:
 
       # Checkout first as we do a control on the pom.xml version
@@ -185,16 +184,24 @@ jobs:
         run:
           gpg --batch --yes --passphrase "${{ secrets.GPG_SOFTWARE_SIGNING_PASSPHRASE }}" --import <(echo "${{ secrets.GPG_SOFTWARE_SIGNING_KEY }}")
 
-      - name: Release
+      - name: JReleaser Full Release
         uses: jreleaser/release-action@v2
         with:
           arguments: full-release
         env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          JRELEASER_DOCKER_GHCR_IO_PASSWORD: ${{ secrets.RELEASE_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ steps.props.outputs.project_version }}
+          # Mandatory passphrase otherwise: gpg: signing failed: Inappropriate ioctl for device
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_SOFTWARE_SIGNING_PASSPHRASE }}
           JRELEASER_OUTPUT_DIRECTORY: ${{ env.JRELEASER_OUT_DIRECTORY }}
+          # Token
+          # JRELEASER_GITHUB_TOKEN should be secrets.GITHUB_TOKEN
+          # Otherwise we get another push leading to a recursive start of release workflow
+          # see https://github.com/jreleaser/jreleaser/issues/2010
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_DOCKER_GHCR_IO_PASSWORD: ${{ secrets.RELEASE_TOKEN }}
+          JRELEASER_WINGET_GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          JRELEASER_HOMEBREW_GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          JRELEASER_CHOCOLATEY_GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
       - name: JReleaser Logs
         if: always()

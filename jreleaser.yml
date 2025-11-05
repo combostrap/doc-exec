@@ -45,8 +45,6 @@ project:
 # https://jreleaser.org/guide/latest/reference/release/github.html
 release:
   github:
-    owner: combostrap # in docker, repository name must be lowercase
-    name: doc-exec
     overwrite: true # Overwrite will delete the release
     # We create the tag
     skipTag: true
