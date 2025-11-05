@@ -315,6 +315,7 @@ distributions:
     # * on Windows, validate and install them
     #    winget validate --manifest \\wsl.localhost\xxx\doc-exec\target\jreleaser\prepare\doc-exec-installer\winget\manifests\c\combostrap\doc-exec\1.0.0
     #    winget install --manifest \\wsl.localhost\xxx\doc-exec\target\jreleaser\prepare\doc-exec-installer\winget\manifests\c\combostrap\doc-exec\1.0.0
+    # https://jreleaser.org/guide/latest/reference/packagers/winget.html#_repository
     winget:
       active: RELEASE
       continueOnError: true
@@ -324,12 +325,15 @@ distributions:
         scope: USER # Why? No space by default in the path, `C:\Users\user\AppData\Local\doc-exec\`
       repository:
         active: ALWAYS
+        # Jreleaser creates a repo by product, not a unique repo, we do
         name: winget-manifests
-        commitMessage: 'Doc Exec {{tagName}}'
+        commitMessage: '{{projectName}} {{tagName}}'
+        # Tag name got also the product name so that we can have multiple product in the same repo
+        tagName: '{{projectName}}-{{tagName}}'
     artifacts:
       # used by winget
       - path: '{{baseOutputDirectory}}/jreleaser/assemble/doc-exec-installer/jpackage/{{projectName}}-{{projectVersionNumber}}.msi'
-        transform: '{{distributionName}}/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-{{artifactPlatform}}.msi'
+        transform: '{{distributionName}}/{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-jre-x64.msi'
         platform: 'windows-x86_64'
 # deb and rpm are not supported for now as we need to create our own repo for distribution with apt or yum:
 # * installation on linux desktop is with brew,

@@ -103,7 +103,7 @@ The paths are relative to the base file directory
 
 ## Installation
 
-### Brew
+### Brew (Linux, Windows WSL, macOS)
 
 For Linux/Windows WSL and macOS, with [brew](https://brew.sh/)
 
@@ -111,7 +111,7 @@ For Linux/Windows WSL and macOS, with [brew](https://brew.sh/)
 brew install combostrap/tap/doc-exec
 ```
 
-### Docker
+### Docker (Linux, Windows, macOS)
 
 With [docker releases](https://github.com/ComboStrap/doc-exec/pkgs/container/doc-exec)
 
@@ -122,3 +122,12 @@ docker run \
   ghcr.io/combostrap/doc-exec-alpine:latest \
   doc-exec --version
 ```
+
+### Winget (Windows)
+
+```bash
+winget install --id combostrap.doc-exec
+```
+
+Note that you may get a `Windows protected your PC`.
+To continue, click on the `More info` link and on the button `Run anyway`

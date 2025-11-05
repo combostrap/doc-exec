@@ -2,8 +2,12 @@ name: Release
 # Ref: https://raw.githubusercontent.com/jreleaser/helloworld-java-jpackage/refs/heads/main/.github/workflows/release.yml
 
 on:
+  # Trigger on button click
   workflow_dispatch:
-
+  # Trigger on tag push
+  push:
+    tags:
+      - 'v*'
 
 # Release Token
 # https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes
