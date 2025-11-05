@@ -28,7 +28,7 @@
         In temp, so that we don't need to download them again after a mvn clean -->
         <jdk.download-directory>${java.io.tmpdir}/jdks</jdk.download-directory>
 
-        <!-- Where are the dependency copied (Jlink needs them) -->
+        <!-- Where are the dependency copied (Jlink and JArchive needs them) -->
         <dependency.output-directory>${project.build.directory}/deps</dependency.output-directory>
 
         <!-- JReleaser -->

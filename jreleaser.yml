@@ -4,8 +4,6 @@
 
 environment:
   properties:
-    # The jars are copied via maven with the release profile in the deps directory
-    depsPrefix: 'deps'
     maintainer: 'nico@combostrap.com'
 
 # https://jreleaser.org/guide/latest/reference/project.html
@@ -183,7 +181,7 @@ assemble:
         path: '{{baseOutputDirectory}}/{{projectJavaArtifactId}}-{{projectVersion}}.jar'
       jars:
         # The dependency jars are copied via maven with the release profile in the deps directory
-        - pattern: '{{baseOutputDirectory}}/{{depsPrefix}}/*.jar'
+        - pattern: '{{Env.DEPENDENCY_OUTPUT_DIRECTORY}}/*.jar'
       swid:
         tagRef: swid-tag
   # https://jreleaser.org/guide/latest/reference/assemble/jpackage.html#_jlink_jpackage
