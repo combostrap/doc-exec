@@ -9,6 +9,13 @@ on:
     tags:
       - 'v*'
 
+# When you create and push a tag, Git might trigger the workflow twice if you have other push triggers (like on branches).
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#example-only-cancel-in-progress-jobs-or-runs-for-the-current-workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # to cancel any currently running job or workflow in the same concurrency group
+  cancel-in-progress: true
+
 # Release Token
 # https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes
 # The release token should have:
