@@ -32,7 +32,7 @@
         <dependency.output-directory>${project.build.directory}/deps</dependency.output-directory>
 
         <!-- JReleaser -->
-        <jreleaser.version>1.17.0</jreleaser.version>
+        <jreleaser.version>1.21.0</jreleaser.version>
 
         <!-- Encoding -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -11,6 +11,7 @@ on:
 
 # When you create and push a tag, Git might trigger the workflow twice if you have other push triggers (like on branches).
 # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#example-only-cancel-in-progress-jobs-or-runs-for-the-current-workflow
+# https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments#using-concurrency
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   # to cancel any currently running job or workflow in the same concurrency group
