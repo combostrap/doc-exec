@@ -1,12 +1,12 @@
 # DocExec
 
-
 ## About
 
 `doc-exec` is a tool that can:
-* parse documentation files, 
-* extract code blocks, 
-* execute them, 
+
+* parse documentation files,
+* extract code blocks,
+* execute them,
 * and update the documentation with the execution result.
 
 It's similar to executable documentation tools like Jupyter notebooks but for general
@@ -15,7 +15,6 @@ documentation formats.
 ## Example
 
 ### With the doc-exec cli
-
 
 ```bash
 doc-exec \
@@ -35,20 +34,20 @@ final Path path = Paths.get("./src/test/resources/docTest/fileTest.txt");
 
 // Execution
 List<DocExecutorResult> docTestRuns = DocExecutor
-  .create("run-name")
-  // where to find the files to inject
-  .setBaseFileDirectory(Paths.get("./src/test/resources"))
-  .setShellCommandExecuteViaMainClass("cat", CommandCat.class)
-  .build()      
-  .run(path);
+        .create("run-name")
+        // where to find the files to inject
+        .setBaseFileDirectory(Paths.get("./src/test/resources"))
+        .setShellCommandExecuteViaMainClass("cat", CommandCat.class)
+        .build()
+        .run(path);
 ```
 
 See the [DocExecutor Class for all options](src/main/java/com/combostrap/docExec/DocExecutor.java)
 
-
 ## Doc-Exec Execution
 
 It will:
+
 * scan for [unit node](#unit-node-syntax)
 * capture the file, code and console node
 * replace the file content if present
@@ -57,6 +56,7 @@ It will:
 ## Unit Node Syntax
 
 A unit may have:
+
 * one or more file block (to replace the content of a file, generally used in the code)
 * zero or one code block (the code to execute)
 * zero or one console block (to get the content of the code execution)
@@ -66,15 +66,16 @@ A unit may have:
     <file lang path/to/File>
     </file>
     <code bash>
-       echo $HOME
+    echo $HOME
     </code>
     <console>
-        Whatever
+    Whatever
     </console>
 </unit>
 ```
 
 ## Lang
+
 ### Java
 
 [Java](docs/lang-java.md)
@@ -92,6 +93,7 @@ It will replace the content of a console block with the result of a code executi
 ### File replacement
 
 It will replace the content of the file inside the file block
+
 ```xml
 <unit>
     <file lang path/to/File>
@@ -108,7 +110,10 @@ The paths are relative to the base file directory
 For Linux/Windows WSL and macOS, with [brew](https://brew.sh/)
 
 ```bash
+# install
 brew install combostrap/tap/doc-exec
+# uninstall
+brew uninstall doc-exec
 ```
 
 ### Docker (Linux, Windows, macOS)
@@ -125,9 +130,23 @@ docker run \
 
 ### Winget (Windows)
 
+* install - Note that you may get a `Windows protected your PC`.
+  To continue, click on the `More info` link and on the button `Run anyway`
+
 ```bash
 winget install --id combostrap.doc-exec
 ```
 
-Note that you may get a `Windows protected your PC`.
-To continue, click on the `More info` link and on the button `Run anyway`
+* uninstall
+
+```bash
+winget uninstall --name doc-exec
+```
+
+### Manually
+
+* download the `jre` or `nojre` zip archive that corresponds to your CPU in the [releases](https://github.com/combostrap/doc-exec/releases)
+* unzip it
+* add the `bin` directory into your PATH
+
+`jre` archive do not need java installed while `nojre` needs it.

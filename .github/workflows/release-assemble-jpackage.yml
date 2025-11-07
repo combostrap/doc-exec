@@ -30,18 +30,25 @@ on:
 
 # Constant for entire workflow
 env:
-  # The jpackage assembly name
-  # It should not change, but it's still a property
+  # The assembly name. They should never change, but it's still a property
   JRELEASER_JPACKAGE_ASSEMBLY_NAME: 'doc-exec-installer'
-  JRELEASER_JLINK_ASSEMBLY_NAME: 'doc-exec-standalone'
-  JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME: 'doc-exec'
+  JRELEASER_JLINK_ASSEMBLY_NAME: 'doc-exec-jre'
+  JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME: 'doc-exec-nojre'
   JRELEASER_OUT_DIRECTORY: 'target'
-  WORKFLOW_ID: release-assemble-jpackage # the workflow name without extension
+  WORKFLOW_ID: 'release-assemble-jpackage' # the workflow name without extension
 
 jobs:
-  assemble:
+
+  # Jlink archive used by Jpackage are build and tested on a Linux OS
+  assemble-archive:
+    uses: ./.github/workflows/release-assemble-archive.yml
+
+  # The name is used as path in GitHub
+  # So we get from a release run: release-assemble / assemble-archive
+  assemble-jpackage:
     # We can't put any runner context info here unfortunately
     name: 'Assemble ${{ matrix.os }}'
+    needs: [ assemble-archive ]
     strategy:
       fail-fast: false
       matrix:
@@ -121,10 +128,18 @@ jobs:
           JDK_DOWNLOAD_DIRECTORY=$($YQ_CMD '.project.properties."jdk.download-directory"' "$POM_EFFECTIVE")
           echo "jdk_download_directory=$JDK_DOWNLOAD_DIRECTORY" >> $GITHUB_OUTPUT
           
-          # JDK Name - The jdk and runner id
+          # The runner os
+          # It should be lowercase, we use node
+          # Why Node and not bash subsitution, 
+          # the macOS runner has an old bash: 3.2.57(1)-release that does not support it
+          RUNNER_OS=$(echo 'console.log("${{ runner.os }}".toLowerCase())' | node -);
+          echo "runner_os=${RUNNER_OS}" >> $GITHUB_OUTPUT
+          
+          # JDK Name - The os and runner id
           # The name uses to download the jdk. It's unique by runner and unique by jdk
           # It should be lowercase, we use node
-          # Why Node and not bash subsitution, the macOS runner has an old bash: 3.2.57(1)-release that does not support it
+          # Why Node and not bash subsitution, 
+          # the macOS runner has an old bash: 3.2.57(1)-release that does not support it
           JDK_NAME=$(echo 'console.log("${{ runner.os }}-${{ runner.arch }}".toLowerCase())' | node -);
           echo "jdk_name=${JDK_NAME}" >> $GITHUB_OUTPUT
 
@@ -136,20 +151,15 @@ jobs:
           distribution: ${{ steps.props.outputs.jdk_distro }}
           cache: maven
 
+      # Still needed by JPackage - strange
       # Run the jdks profile default goal with maven wrapper
       - name: Maven Setup JDKs
         # The shell is bash on Linux and Powershell in Windows
         # The quotes are mandatory for Windows otherwise it will see -Djdk.name=xxx as powershell parameter
         run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml -Pjdks "-Djdk.name=${{ steps.props.outputs.jdk_name }}"
 
-      # Run the deps profile default goal with maven wrapper
-      # Jlink packaging needs them
-      - name: Maven Copy dependencies
-        run: ./mvnw --no-transfer-progress --batch-mode --quiet --file pom.xml -Pdeps
-
-      # Note on test
-      # Build jar
-      - name: Maven Build
+      # Build jar, still needed by Jpackage even with the jlink runtime ???
+      - name: Maven Build Jar
         run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml -DskipTests package
 
       # Wix v3 is needed by Jpackage
@@ -160,11 +170,23 @@ jobs:
         # https://learn.microsoft.com/en-us/windows/package-manager/winget/install
         run: winget install -e --id WiXToolset.WiXToolset -v 3.14.1.8722 --silent --accept-source-agreements --accept-package-agreements --force
 
+      # Download Installer created by the archive assemble workflow
+      - name: Download Jlink Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: false
+        with:
+          pattern: jlink-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.runner_os }}
+          merge-multiple: true # download them to the same directory
+          path: ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink
+
+      - name: Display structure of downloaded files
+        run: ls -R
+
       # Jlink and Jpackage assembly
       - name: JReleaser Assemble
         uses: jreleaser/release-action@v2
         with:
-          arguments: assemble --select-current-platform
+          arguments: assemble --select-current-platform --assembler jpackage
           setup-java: false
         env:
           JRELEASER_PROJECT_VERSION: ${{ steps.props.outputs.project_version }}
@@ -173,6 +195,7 @@ jobs:
           JDK_DOWNLOAD_DIRECTORY: ${{ steps.props.outputs.jdk_download_directory }}
           JDK_VERSION: ${{ steps.props.outputs.jdk_version }}
           JDK_DISTRO: ${{ steps.props.outputs.jdk_distro }}
+
 
       # Upload log
       - name: JReleaser output

@@ -111,6 +111,8 @@ assemble:
   javaArchive:
     doc-exec-nojre:
       active: ALWAYS
+      executable:
+        name: doc-exec
       exported: true # The artifacts generated will be used in the distribution called doc-exec-nojre
       # Name: ie combostrap-doc-exec-1.0.0-nojre.zip or tar
       archiveName: '{{projectJavaArtifactId}}-{{projectEffectiveVersion}}-nojre'
