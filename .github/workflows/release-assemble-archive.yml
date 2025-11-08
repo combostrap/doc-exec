@@ -22,8 +22,8 @@ jobs:
   # Assemble artifacts except installers
   # Release all generated artifacts
   # The name is used as path in GitHub
-  # so we get: release-assemble / assemble-archive
-  assemble-archive:
+  # so we get: release-assemble / assemble-archive / assemble
+  assemble:
     runs-on: ubuntu-latest
     steps:
 

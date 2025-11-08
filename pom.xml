@@ -429,10 +429,11 @@
                             <outputDirectory>${jdk.download-directory}</outputDirectory>
                             <jdks>
                                 <jdk>
+                                    <!-- The jdk name is known as the platform name -->
+                                    <!-- It's a unique combination of os and arch  -->
                                     <!-- Arm64 and not aarch64 because this is the name used in GitHub -->
-                                    <!-- So that we can filter -->
+                                    <!-- Easier to pronounce -->
                                     <!-- Distro is not in the name as it's the same for all JDK -->
-                                    <!-- It complicates things with GitHub Workflow, JReleaser.yml integration -->
                                     <name>linux-arm64</name>
                                     <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.16_8.tar.gz</url>
                                     <checksum>sha256/423416447885d9e45f96dd9e0b2c1367da5e1b0353e187cfdf9388c9820ac147</checksum>

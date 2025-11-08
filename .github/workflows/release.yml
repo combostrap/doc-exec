@@ -46,7 +46,7 @@ jobs:
   release-assemble:
     uses: ./.github/workflows/release-assemble-jpackage.yml
     with:
-      os: 'windows-latest'
+      runner: 'windows-latest'
 
   # Assemble artifacts except installers
   # Release all generated artifacts

@@ -8,8 +8,8 @@ on:
     # ! input have to be duplicated with workflow_call
     # Limitations of GitHub: https://github.com/orgs/community/discussions/39357
     inputs:
-      os:
-        description: 'Operating System'
+      runner:
+        description: 'Runner'
         required: false
         type: choice
         default: windows-latest
@@ -22,8 +22,8 @@ on:
     # ! input have to be duplicated with workflow_dispatch
     # Limitations of GitHub: https://github.com/orgs/community/discussions/39357
     inputs:
-      os:
-        description: 'Operating System'
+      runner:
+        description: 'Runner'
         required: true
         default: windows-latest
         type: string
@@ -54,8 +54,8 @@ jobs:
       matrix:
         # List: https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job#standard-github-hosted-runners-for-public-repositories
         os: ${{ fromJSON(
-          inputs.os == 'all' && '["ubuntu-latest", "windows-latest", "macos-latest"]' ||
-          format('["{0}"]', inputs.os)
+          inputs.runner == 'all' && '["ubuntu-latest", "windows-latest", "macos-latest"]' ||
+          format('["{0}"]', inputs.runner)
           ) }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -116,32 +116,77 @@ jobs:
           ./mvnw help:effective-pom "-Doutput=$POM_EFFECTIVE"
           
           # Why yq because mvnw help:evaluate is fucking slow
-          PROJECT_VERSION=$($YQ_CMD '.project.version' "$POM_EFFECTIVE")
+          PROJECT_VERSION=$($YQ_CMD --exit-status '.project.version' "$POM_EFFECTIVE")
           echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
           
-          JDK_VERSION=$($YQ_CMD '.project.properties."jdk.version"' "$POM_EFFECTIVE")
+          # Project effective version
+          case "$PROJECT_VERSION" in
+            *-SNAPSHOT)
+              PROJECT_EFFECTIVE_VERSION="$(yq --exit-status '.project.snapshot.label' jreleaser.yml)"
+              ;;
+            *)
+              PROJECT_EFFECTIVE_VERSION="$PROJECT_VERSION"
+              ;;
+          esac
+          echo "project_effective_version=${PROJECT_EFFECTIVE_VERSION}" >> $GITHUB_OUTPUT
+          
+          ARTIFACT_ID=$($YQ_CMD --exit-status '.project.artifactId' "$POM_EFFECTIVE")
+          echo "artifact_id=$ARTIFACT_ID" >> $GITHUB_OUTPUT
+          
+          JDK_VERSION=$($YQ_CMD --exit-status '.project.properties."jdk.version"' "$POM_EFFECTIVE")
           echo "jdk_version=$JDK_VERSION" >> $GITHUB_OUTPUT
           
-          JDK_DISTRO=$($YQ_CMD '.project.properties."jdk.distribution"' "$POM_EFFECTIVE")
+          JDK_DISTRO=$($YQ_CMD --exit-status '.project.properties."jdk.distribution"' "$POM_EFFECTIVE")
           echo "jdk_distro=$JDK_DISTRO" >> $GITHUB_OUTPUT
           
-          JDK_DOWNLOAD_DIRECTORY=$($YQ_CMD '.project.properties."jdk.download-directory"' "$POM_EFFECTIVE")
+          JDK_DOWNLOAD_DIRECTORY=$($YQ_CMD --exit-status '.project.properties."jdk.download-directory"' "$POM_EFFECTIVE")
           echo "jdk_download_directory=$JDK_DOWNLOAD_DIRECTORY" >> $GITHUB_OUTPUT
+                    
+          # Runner arch normalization
+          # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#runner-context
+          case "${{ runner.arch }}" in
+            ARM64)
+              ARCH_JRELEASER="aarch_64"
+              ARCH_ARTIFACT="arm64"
+              ;;
+            X64)
+              ARCH_JRELEASER="x86_64"
+              ARCH_ARTIFACT="x64"
+              ;;
+            *)
+              echo "Unknown arch ${{ runner.arch }}"
+              exit 1
+              ;;
+          esac
           
-          # The runner os
-          # It should be lowercase, we use node
-          # Why Node and not bash subsitution, 
-          # the macOS runner has an old bash: 3.2.57(1)-release that does not support it
-          RUNNER_OS=$(echo 'console.log("${{ runner.os }}".toLowerCase())' | node -);
-          echo "runner_os=${RUNNER_OS}" >> $GITHUB_OUTPUT
+          # Runner os normalization
+          # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#runner-context
+          case "${{ runner.os }}" in
+            Windows)
+              OS_JRELEASER="windows"
+              OS_ARTIFACT="windows"
+              ;;
+            Linux)
+              OS_JRELEASER="linux"
+              OS_ARTIFACT="linux"
+              ;;
+            macOS)
+              OS_JRELEASER="osx"
+              OS_ARTIFACT="macos"
+              ;;
+            *)
+              echo "Unknown arch ${{ runner.arch }}"
+              exit 1
+              ;;
+          esac
+          echo "os_artifact=${OS_ARTIFACT}" >> $GITHUB_OUTPUT
           
-          # JDK Name - The os and runner id
+          # Platform - The os and runner id
           # The name uses to download the jdk. It's unique by runner and unique by jdk
-          # It should be lowercase, we use node
-          # Why Node and not bash subsitution, 
-          # the macOS runner has an old bash: 3.2.57(1)-release that does not support it
-          JDK_NAME=$(echo 'console.log("${{ runner.os }}-${{ runner.arch }}".toLowerCase())' | node -);
-          echo "jdk_name=${JDK_NAME}" >> $GITHUB_OUTPUT
+          PLATFORM_JRELEASER="${OS_JRELEASER}-${ARCH_JRELEASER}";
+          echo "platform_jreleaser=${PLATFORM_JRELEASER}" >> $GITHUB_OUTPUT
+          PLATFORM_ARTIFACT="${OS_ARTIFACT}-${ARCH_ARTIFACT}";
+          echo "platform_artifact=${PLATFORM_ARTIFACT}" >> $GITHUB_OUTPUT
 
 
       - name: Setup Java
@@ -156,7 +201,7 @@ jobs:
       - name: Maven Setup JDKs
         # The shell is bash on Linux and Powershell in Windows
         # The quotes are mandatory for Windows otherwise it will see -Djdk.name=xxx as powershell parameter
-        run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml -Pjdks "-Djdk.name=${{ steps.props.outputs.jdk_name }}"
+        run: ./mvnw --no-transfer-progress --batch-mode --file pom.xml -Pjdks "-Djdk.name=${{ steps.props.outputs.platform_artifact }}"
 
       # Build jar, still needed by Jpackage even with the jlink runtime ???
       - name: Maven Build Jar
@@ -175,9 +220,16 @@ jobs:
         uses: actions/download-artifact@v4
         continue-on-error: false
         with:
-          pattern: jlink-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.runner_os }}
+          pattern: jlink-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.os_artifact }}
           merge-multiple: true # download them to the same directory
           path: ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink
+
+      - name: Expand jlink
+        shell: bash
+        run: |
+          cd ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink
+          ls -l
+          unzip -q -d work-${{ steps.props.outputs.platform_jreleaser }} ${{ steps.props.outputs.artifact_id }}-${{ steps.props.outputs.project_effective_version }}-jre-${{ steps.props.outputs.platform_artifact }}.zip
 
       - name: Display structure of downloaded files
         run: ls -R
@@ -203,7 +255,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           retention-days: 1 # 90 by default
-          name: jreleaser-logs-${{env.WORKFLOW_ID}}-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.jdk_name }}
+          name: jreleaser-logs-${{env.WORKFLOW_ID}}-${{ steps.props.outputs.project_effective_version }}-${{ steps.props.outputs.platform_artifact }}
           path: |
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/trace.log
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/output.properties
@@ -215,7 +267,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           retention-days: 1 # 90 by default
-          name: jpackage-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.jdk_name }}
+          name: jpackage-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.platform_artifact }}
           path: |
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage/*.pkg
             ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage/*.msi
