@@ -254,7 +254,7 @@ distributions:
       active: ALWAYS
       continueOnError: true
       title: 'Doc Execution'
-      iconUrl: 'https://rawcdn.githack.com/ComboStrap/site-com-combostrap/fcae9343885f4b6e4e8f977a05cb7353e84c3c8c/data/media/android-chrome-192x192.png'
+      iconUrl: 'https://rawcdn.githack.com/combostrap/site-com-combostrap/fcae9343885f4b6e4e8f977a05cb7353e84c3c8c/data/media/android-chrome-192x192.png'
       packageName: 'doc-exec' # no template (name of the package, ie name of the application)
       commitAuthor:
         name: ReleaseBot

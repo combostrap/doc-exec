@@ -143,6 +143,14 @@ winget install --id combostrap.doc-exec
 winget uninstall --name doc-exec
 ```
 
+### Chocolatey (Windows)
+
+```bash
+choco install doc-exec
+# uninstall
+choco uninstall doc-exec 
+```
+
 ### Manually
 
 * download the `jre` or `nojre` zip archive that corresponds to your CPU in the [releases](https://github.com/combostrap/doc-exec/releases)
