@@ -124,6 +124,17 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- JUL implementation (ie JUL was introduced at 1.4) -->
+        <!-- to disable the Slf4j Warning -->
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-jdk14 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <!-- 1.7.2 used by turnaround -->
+            <version>1.7.29</version>
+            <scope>runtime</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

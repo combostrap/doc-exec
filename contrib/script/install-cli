@@ -30,19 +30,17 @@ if [[ "${path_owner}" != "${current_user}" ]]; then
   exit 1
 fi
 
-# Go to the IDE project root and install the archive
-(cd "$PROJECT_ROOT"; mvn install -DskipTests)
-
-
-# Create the release package
-# Create the Jar, download the jdk, move the dependencies
-mvn clean package -DskipTests -P release
-
+# Create the package
+(cd "$PROJECT_ROOT"; ./mvnw package -DskipTests)
+# Download the jdk
+(cd "$PROJECT_ROOT"; ./mvnw --no-transfer-progress --batch-mode --file pom.xml -Pjdks -Djdk.name="linux-x64")
+# Move the dependencies
+(cd "$PROJECT_ROOT"; ./mvnw --no-transfer-progress --batch-mode --quiet --file pom.xml -Pdeps)
 
 # Clean
 # mkdir first as the tabulify dir should not exists, other the move command will copy the directory into
 mkdir -p "$CLI_HOME" && rm -rf "$CLI_HOME"
-ASSEMBLY_DIR=target/jreleaser/assemble/$CLI_NAME/jlink
+ASSEMBLY_DIR=target/jreleaser/assemble/doc-exec-jre/jlink
 rm -rf "$ASSEMBLY_DIR"
 
 # Be sure to generate only for the current platform
@@ -57,6 +55,6 @@ ARCHIVE_VERSION_NAME=$JRELEASER_PROJECT_VERSION
 if [[ "$JRELEASER_PROJECT_VERSION" == *"-SNAPSHOT"* ]]; then
   ARCHIVE_VERSION_NAME=$(yq --exit-status '.project.snapshot.label' jreleaser.yml)
 fi
-ARCHIVE_NAME=${CLI_NAME}-${ARCHIVE_VERSION_NAME}-linux-x86_64
+ARCHIVE_NAME=combostrap-${CLI_NAME}-${ARCHIVE_VERSION_NAME}-jre-linux-x64
 ASSEMBLY_WORK_DIR=work-linux-x86_64
 mv "${ASSEMBLY_DIR}/${ASSEMBLY_WORK_DIR}/${ARCHIVE_NAME}" "${CLI_HOME}"
