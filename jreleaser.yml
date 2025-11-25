@@ -295,8 +295,8 @@ distributions:
           matchers:
             platform: 'linux_musl-x86_64'
           imageNames:
-            - "ghcr.io/combostrap/{{dockerSpecName}}:{{tagName}}"
-            - "ghcr.io/combostrap/{{dockerSpecName}}:latest"
+            - "ghcr.io/{{repoOwner}}/{{dockerSpecName}}:{{tagName}}"
+            - "ghcr.io/{{repoOwner}}/{{dockerSpecName}}:latest"
           preCommands:
             - 'RUN apk add unzip bash'
           postCommands:

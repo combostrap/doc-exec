@@ -27,9 +27,6 @@ POM_EFFECTIVE="$JRELEASER_OUTPUT_DIRECTORY/pom-effective.xml"
 export JRELEASER_PROJECT_VERSION
 JRELEASER_PROJECT_VERSION=$(yq --exit-status '.project.version' "$POM_EFFECTIVE")
 
-# Jreleaser version
-JRELEASER_VERSION=$(yq --exit-status '.project.properties."jreleaser.version"' "$POM_EFFECTIVE")
-
 # Jdks (used in Jlink package configuration)
 export JDK_DOWNLOAD_DIRECTORY # where the jdks are downloaded
 JDK_DOWNLOAD_DIRECTORY=$(yq --exit-status '.project.properties."jdk.download-directory"' "$POM_EFFECTIVE")
@@ -56,4 +53,4 @@ shift # Removes the first argument, leaving the rest in $@
 # All relative path are relative to the project root
 cd "$PROJECT_ROOT" || exit 1
 
-"$HOME/.sdkman/candidates/jreleaser/${JRELEASER_VERSION}/bin/jreleaser" "$COMMAND" --config-file="$JRELEASER_CONFIG_FILE"  "$@"
+"$(which -a jreleaser | sed -n '2p')" "$COMMAND" --config-file="$JRELEASER_CONFIG_FILE"  "$@"
