@@ -80,3 +80,6 @@ indent_size = unset
 ij_java_block_comment_at_first_column = false
 # if true, the comments characters (//) are set at the beginning
 ij_java_line_comment_at_first_column = false
+
+[*.{cmd,bat}]
+end_of_line = crlf
