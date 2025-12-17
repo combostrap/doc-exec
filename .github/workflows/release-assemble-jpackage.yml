@@ -39,15 +39,20 @@ on:
 
 # Constant for entire workflow
 env:
-  # The assembly name. They should never change, but it's still a property
+  # Workflow specific
+  CLI_NAME: 'doc-exec' # name of the app, command
+  WORKFLOW_ID: 'release-assemble-jpackage' # the workflow name without extension
+  MSI_INSTALL_LOG_NAME: 'msi-install.log'
+
+  # Global, copied on all release workflows
+  # They should never change, but it's still a property
   JRELEASER_JPACKAGE_ASSEMBLY_NAME: 'doc-exec-installer'
   JRELEASER_JLINK_ASSEMBLY_NAME: 'doc-exec-jre'
   JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME: 'doc-exec-nojre'
   BUILD_DIRECTORY: 'target'
-  WORKFLOW_ID: 'release-assemble-jpackage' # the workflow name without extension
   # Even if we can get it from the pom, it's fix, and we win a couple of second with help:evaluate
-  ARTIFACT_ID: combostrap-doc-exec
-  SNAPSHOT_TAG: early-access
+  ARTIFACT_ID: 'combostrap-doc-exec'
+  SNAPSHOT_TAG: 'early-access'
 
 jobs:
 
@@ -185,9 +190,13 @@ jobs:
         # The quotes are mandatory for Windows otherwise it will see -Djdk.name=xxx as powershell parameter
         run: ./mvnw --no-transfer-progress --batch-mode -Pjdks "-Djdk.name=${{ steps.props.outputs.platform_artifact }}" --settings .github\cd-maven-settings.xml
 
-      # Build jar, still needed by Jpackage even with the jlink runtime ???
+      # Build jar, still needed by Jpackage even with the jlink zip because it just takes the runtime, not the app
       - name: Maven Build Jar
-        run: ./mvnw --no-transfer-progress --batch-mode -DskipTests package --settings .github\cd-maven-settings.xml
+        run: ./mvnw package -DskipTests --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
+
+      # Build jar, still needed by Jpackage even with the jlink zip because it just takes the runtime, not the app
+      - name: Maven Copy dependencies
+        run: ./mvnw -Pdeps --no-transfer-progress --batch-mode --quiet --settings .github\cd-maven-settings.xml
 
       # Wix v3 is needed by Jpackage
       - name: Winget Install WiX v3
@@ -206,12 +215,13 @@ jobs:
           merge-multiple: true # download them to the same directory
           path: ${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink
 
-      - name: Expand jlink
+      - name: Expand jlink and move dependencies
         shell: bash
         run: |
           cd ${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink
           ls -l
           unzip -q -d work-${{ steps.props.outputs.platform_jreleaser }} ${{ env.ARTIFACT_ID }}-${{ steps.props.outputs.project_version }}-jre-${{ steps.props.outputs.platform_artifact }}.zip
+
 
       - name: Display structure of downloaded files
         run: ls -R
@@ -222,16 +232,46 @@ jobs:
         # The quotes are mandatory for Windows otherwise it will see -Djreleaser.select as powershell parameter
         run: ./mvnw jreleaser:assemble "-Djreleaser.select.current.platform" "-Djreleaser.assemblers=jpackage" --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
 
+      - name: Test Windows MSI file installation
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+
+          # Error handling (is fucked)
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+          $PSDefaultParameterValues['*:ErrorAction'] = 'Stop'
+          function ExitOnFailure { if (-not $?) { exit $LASTEXITCODE } }
+
+          # App Name is fixed, we can't change it
+          Start-Process msiexec.exe `
+            -ArgumentList '/i "${{env.BUILD_DIRECTORY}}\jreleaser\assemble\${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}\jpackage\${{env.CLI_NAME}}-${{ steps.props.outputs.project_version }}.msi" /qn /norestart /l*v "${{env.BUILD_DIRECTORY}}\${{env.MSI_INSTALL_LOG_NAME}}"' `
+            -Wait -NoNewWindow
+          ExitOnFailure
+
+          # Should contains the package
+          Write-Host ("User Path: "+ [System.Environment]::GetEnvironmentVariable("Path","User"))
+
+          # Refresh PATH for current session
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+          # Verify command
+          ${{env.CLI_NAME}} --version
+          ExitOnFailure
+
+
       # Upload log
-      - name: JReleaser output
+      - name: Upload log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           retention-days: 1 # 90 by default
-          name: jreleaser-logs-${{env.WORKFLOW_ID}}-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.platform_artifact }}
+          name: logs-${{env.WORKFLOW_ID}}-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.platform_artifact }}
           path: |
             ${{env.BUILD_DIRECTORY}}/jreleaser/trace.log
             ${{env.BUILD_DIRECTORY}}/jreleaser/output.properties
+            ${{env.BUILD_DIRECTORY}}/${{env.MSI_INSTALL_LOG_NAME}}
 
       # Upload Jpackage native package
       # Jlink artifact is not in this upload because we download them into a different directory
