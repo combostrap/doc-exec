@@ -110,11 +110,14 @@ jobs:
           # It's more slow as we need to restart the whole archive flow
           PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout --settings .github/cd-maven-settings.xml)
           PROJECT_TAG="v$PROJECT_VERSION"
+          PROJECT_VERSION_NUMBER="$PROJECT_VERSION"
           if [[ "$PROJECT_VERSION" =~ .*-SNAPSHOT ]]; then
+            PROJECT_VERSION_NUMBER="${PROJECT_VERSION%-*}"
             PROJECT_VERSION=${{env.SNAPSHOT_TAG}}
             PROJECT_TAG=${{env.SNAPSHOT_TAG}}
           fi
           echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
+          echo "project_version_number=$PROJECT_VERSION_NUMBER" >> $GITHUB_OUTPUT
 
           # Check
           TAG="${{ inputs.tag }}"
@@ -233,7 +236,7 @@ jobs:
 
           # App Name is fixed, we can't change it
           Start-Process msiexec.exe `
-            -ArgumentList '/i "${{env.BUILD_DIRECTORY}}\jreleaser\assemble\${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}\jpackage\${{env.CLI_NAME}}-${{ steps.props.outputs.project_version }}.msi" /qn /norestart /l*v "${{env.BUILD_DIRECTORY}}\${{env.MSI_INSTALL_LOG_NAME}}"' `
+            -ArgumentList '/i "${{env.BUILD_DIRECTORY}}\jreleaser\assemble\${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}\jpackage\${{env.CLI_NAME}}-${{ steps.props.outputs.project_version_number }}.msi" /qn /norestart /l*v "${{env.BUILD_DIRECTORY}}\${{env.MSI_INSTALL_LOG_NAME}}"' `
             -Wait -NoNewWindow
           ExitOnFailure
 
