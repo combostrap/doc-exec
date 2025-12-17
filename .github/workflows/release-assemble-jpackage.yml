@@ -1,6 +1,11 @@
 name: Release Assemble JPackage
-# Jpackage needs the original operating system (ie the installer tools and the c library) to create and compile the native package
-# Inspiration: https://github.com/jreleaser/helloworld-java-jpackage/blob/main/.github/workflows/reusable-assemble.yml
+# Jpackage needs:
+#  * the original operating system (ie the installer tools and the c library) to create and compile the native package
+#  * the jdks
+#  * the archive
+#  * the dependency
+# so we made it independent of archive
+# More easy, with less hassle that to download the created jlink archive
 
 # Mandatory (manual)
 on:
@@ -56,18 +61,11 @@ env:
 
 jobs:
 
-  # Jlink archive used by Jpackage are build and tested on a Linux OS
-  assemble-archive:
-    uses: ./.github/workflows/release-assemble-archive.yml
-    with:
-      tag: ${{ inputs.tag }}
-
   # The name is used as path in GitHub
   # So we get from a release run: release-assemble / assemble-archive
   assemble-jpackage:
     # We can't put any runner context info here unfortunately
     name: 'Assemble ${{ matrix.os }}'
-    needs: [ assemble-archive ]
     strategy:
       fail-fast: false
       matrix:
@@ -206,31 +204,12 @@ jobs:
         # https://learn.microsoft.com/en-us/windows/package-manager/winget/install
         run: winget install -e --id WiXToolset.WiXToolset -v 3.14.1.8722 --silent --accept-source-agreements --accept-package-agreements --force
 
-      # Download Installer created by the archive assemble workflow
-      - name: Download Jlink Artifacts
-        uses: actions/download-artifact@v4
-        continue-on-error: false
-        with:
-          pattern: jlink-${{ steps.props.outputs.project_version }}-${{ steps.props.outputs.os_artifact }}
-          merge-multiple: true # download them to the same directory
-          path: ${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink
-
-      - name: Expand jlink and move dependencies
-        shell: bash
-        run: |
-          cd ${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink
-          ls -l
-          unzip -q -d work-${{ steps.props.outputs.platform_jreleaser }} ${{ env.ARTIFACT_ID }}-${{ steps.props.outputs.project_version }}-jre-${{ steps.props.outputs.platform_artifact }}.zip
-
-
-      - name: Display structure of downloaded files
-        run: ls -R
 
       # Jpackage assembly
       - name: JReleaser JPackage Assemble
         # The shell is bash on Linux and Powershell in Windows
         # The quotes are mandatory for Windows otherwise it will see -Djreleaser.select as powershell parameter
-        run: ./mvnw jreleaser:assemble "-Djreleaser.select.current.platform" "-Djreleaser.assemblers=jpackage" --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
+        run: ./mvnw jreleaser:assemble "-Djreleaser.select.current.platform" --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
 
       - name: Test Windows MSI file installation
         if: runner.os == 'Windows'
@@ -286,4 +265,3 @@ jobs:
             ${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage/*.msi
             ${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage/*.deb
             ${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage/*.rpm
-

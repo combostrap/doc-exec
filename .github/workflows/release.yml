@@ -54,17 +54,23 @@ env:
 
 jobs:
 
-  # Assemble (Jpackage starts Archive assembly)
-  release-assemble:
+  # Assemble Installer
+  release-assemble-installer:
     uses: ./.github/workflows/release-assemble-jpackage.yml
     with:
       tag: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
       runner: 'windows-latest'
 
+  # Assemble Archive
+  release-assemble-archive:
+    uses: ./.github/workflows/release-assemble-archive.yml
+    with:
+      tag: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
   # Release all generated artifacts
   release:
     runs-on: ubuntu-latest
-    needs: [ release-assemble ]
+    needs: [ release-assemble-archive, release-assemble-installer ]
     environment: release
     steps:
 
