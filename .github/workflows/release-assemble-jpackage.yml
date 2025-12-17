@@ -106,7 +106,7 @@ jobs:
           # Why not yq even if mvnw help:evaluate is fucking slow
           # Because if yq install failed (ie Download request status is not success)
           # It's more slow as we need to restart the whole archive flow
-          PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout --settings .github\cd-maven-settings.xml)
+          PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout --settings .github/cd-maven-settings.xml)
           PROJECT_TAG="v$PROJECT_VERSION"
           if [[ "$PROJECT_VERSION" =~ .*-SNAPSHOT ]]; then
             PROJECT_VERSION=${{env.SNAPSHOT_TAG}}
@@ -121,11 +121,17 @@ jobs:
             exit 1
           fi
 
-          JDK_VERSION=$(./mvnw help:evaluate -Dexpression=jdk.version -q -DforceStdout --settings .github\cd-maven-settings.xml)
+          JDK_VERSION=$(./mvnw help:evaluate -Dexpression=jdk.version -q -DforceStdout --settings .github/cd-maven-settings.xml)
           echo "jdk_version=$JDK_VERSION" >> $GITHUB_OUTPUT
 
-          JDK_DISTRO=$(./mvnw help:evaluate -Dexpression=jdk.distribution -q -DforceStdout --settings .github\cd-maven-settings.xml)
+          JDK_DISTRO=$(./mvnw help:evaluate -Dexpression=jdk.distribution -q -DforceStdout --settings .github/cd-maven-settings.xml)
           echo "jdk_distro=$JDK_DISTRO" >> $GITHUB_OUTPUT
+
+          PATH_SEP="/"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            PATH_SEP="\"
+          fi
+          echo "path_sep=$PATH_SEP" >> $GITHUB_OUTPUT
 
           # Runner arch normalization
           # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#runner-context
@@ -186,15 +192,15 @@ jobs:
       - name: Maven Setup JDKs
         # The shell is bash on Linux and Powershell in Windows
         # The quotes are mandatory for Windows otherwise it will see -Djdk.name=xxx as powershell parameter
-        run: ./mvnw --no-transfer-progress --batch-mode -Pjdks "-Djdk.name=${{ steps.props.outputs.platform_artifact }}" --settings .github\cd-maven-settings.xml
+        run: ./mvnw --no-transfer-progress --batch-mode -Pjdks "-Djdk.name=${{ steps.props.outputs.platform_artifact }}" --settings ".github${{ steps.props.outputs.platform_artifact }}cd-maven-settings.xml"
 
       # Build jar, still needed by Jpackage even with the jlink zip because it just takes the runtime, not the app
       - name: Maven Build Jar
-        run: ./mvnw package -DskipTests --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
+        run: ./mvnw package -DskipTests --no-transfer-progress --batch-mode --settings ".github${{ steps.props.outputs.platform_artifact }}cd-maven-settings.xml"
 
       # Build jar, still needed by Jpackage even with the jlink zip because it just takes the runtime, not the app
       - name: Maven Copy dependencies
-        run: ./mvnw -Pdeps --no-transfer-progress --batch-mode --quiet --settings .github\cd-maven-settings.xml
+        run: ./mvnw -Pdeps --no-transfer-progress --batch-mode --quiet --settings ".github${{ steps.props.outputs.platform_artifact }}cd-maven-settings.xml"
 
       # Wix v3 is needed by Jpackage
       - name: Winget Install WiX v3
@@ -209,7 +215,7 @@ jobs:
       - name: JReleaser JPackage Assemble
         # The shell is bash on Linux and Powershell in Windows
         # The quotes are mandatory for Windows otherwise it will see -Djreleaser.select as powershell parameter
-        run: ./mvnw jreleaser:assemble "-Djreleaser.select.current.platform" --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
+        run: ./mvnw jreleaser:assemble "-Djreleaser.select.current.platform" --no-transfer-progress --batch-mode --settings ".github${{ steps.props.outputs.platform_artifact }}cd-maven-settings.xml"
 
       - name: Test Windows MSI file installation
         if: runner.os == 'Windows'
