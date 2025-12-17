@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
 name: Release Assemble JPackage
 # Jpackage needs:
 #  * the original operating system (ie the installer tools and the c library) to create and compile the native package
