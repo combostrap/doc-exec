@@ -124,7 +124,7 @@ jobs:
       # We do it here and not in the last release phase to catch error early
       - name: Maven Central Artifacts Creation
         shell: bash
-        run: ./mvnw -Ppublication -DskipTests --no-transfer-progress --batch-mode
+        run: ./mvnw -Ppublication -DskipTests --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
 
       # Upload Maven Central
       - name: Maven Central Artifacts Upload
@@ -138,16 +138,16 @@ jobs:
       # Run the jdks profile default goal with maven wrapper
       - name: Maven Setup JDKs
         # The shell is bash on Linux and Powershell in Windows
-        run: ./mvnw -Pjdks --no-transfer-progress --batch-mode
+        run: ./mvnw -Pjdks --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
 
       # Run the deps profile default goal with maven wrapper
       # Jlink packaging needs them
       - name: Maven Copy dependencies
-        run: ./mvnw -Pdeps --no-transfer-progress --batch-mode --quiet
+        run: ./mvnw -Pdeps --no-transfer-progress --batch-mode --quiet --settings .github\cd-maven-settings.xml
 
       # Build jar
       - name: Maven Build
-        run: ./mvnw package -DskipTests --no-transfer-progress --batch-mode
+        run: ./mvnw package -DskipTests --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
 
       # Create Java Archive
       - name: Java Archive Assemble

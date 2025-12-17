@@ -96,7 +96,7 @@ jobs:
 
           # Generate the effective pom
           POM_EFFECTIVE="${{runner.temp}}/pom-effective.xml"
-          ./mvnw help:effective-pom --quiet "-Doutput=$POM_EFFECTIVE" --no-transfer-progress --batch-mode
+          ./mvnw help:effective-pom --quiet "-Doutput=$POM_EFFECTIVE" --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
 
           # Project version and tag
           PROJECT_VERSION=$(yq --exit-status '.project.version' "$POM_EFFECTIVE")
@@ -199,7 +199,8 @@ jobs:
           set -TCEeuo pipefail
           ./mvnw jreleaser:full-release \
             --no-transfer-progress \
-            --batch-mode
+            --batch-mode \
+            --settings .github\cd-maven-settings.xml
 
       - name: JReleaser Logs
         if: always()

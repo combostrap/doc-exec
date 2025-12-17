@@ -96,34 +96,34 @@ jobs:
         id: props
         shell: bash
         run: |
-          
+
           set -TCEeuo pipefail
-          
+
           # Project version and tag
           # Why not yq even if mvnw help:evaluate is fucking slow
           # Because if yq install failed (ie Download request status is not success)
           # It's more slow as we need to restart the whole archive flow
-          PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+          PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout --settings .github\cd-maven-settings.xml)
           PROJECT_TAG="v$PROJECT_VERSION"
           if [[ "$PROJECT_VERSION" =~ .*-SNAPSHOT ]]; then
             PROJECT_VERSION=${{env.SNAPSHOT_TAG}}
             PROJECT_TAG=${{env.SNAPSHOT_TAG}}
           fi
           echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
-          
+
           # Check
           TAG="${{ inputs.tag }}"
           if [ "$PROJECT_TAG" != "$TAG" ]; then
             echo "Derived Tag from pom.xml ($PROJECT_TAG) is not the same as the workflow tag $TAG"
             exit 1
           fi
-          
-          JDK_VERSION=$(./mvnw help:evaluate -Dexpression=jdk.version -q -DforceStdout)
+
+          JDK_VERSION=$(./mvnw help:evaluate -Dexpression=jdk.version -q -DforceStdout --settings .github\cd-maven-settings.xml)
           echo "jdk_version=$JDK_VERSION" >> $GITHUB_OUTPUT
-          
-          JDK_DISTRO=$(./mvnw help:evaluate -Dexpression=jdk.distribution -q -DforceStdout)
+
+          JDK_DISTRO=$(./mvnw help:evaluate -Dexpression=jdk.distribution -q -DforceStdout --settings .github\cd-maven-settings.xml)
           echo "jdk_distro=$JDK_DISTRO" >> $GITHUB_OUTPUT
-          
+
           # Runner arch normalization
           # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#runner-context
           case "${{ runner.arch }}" in
@@ -140,7 +140,7 @@ jobs:
               exit 1
               ;;
           esac
-          
+
           # Runner os normalization
           # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#runner-context
           case "${{ runner.os }}" in
@@ -162,7 +162,7 @@ jobs:
               ;;
           esac
           echo "os_artifact=${OS_ARTIFACT}" >> $GITHUB_OUTPUT
-          
+
           # Platform - The os and runner id
           # The name uses to download the jdk. It's unique by runner and unique by jdk
           PLATFORM_JRELEASER="${OS_JRELEASER}-${ARCH_JRELEASER}";
@@ -183,11 +183,11 @@ jobs:
       - name: Maven Setup JDKs
         # The shell is bash on Linux and Powershell in Windows
         # The quotes are mandatory for Windows otherwise it will see -Djdk.name=xxx as powershell parameter
-        run: ./mvnw --no-transfer-progress --batch-mode -Pjdks "-Djdk.name=${{ steps.props.outputs.platform_artifact }}"
+        run: ./mvnw --no-transfer-progress --batch-mode -Pjdks "-Djdk.name=${{ steps.props.outputs.platform_artifact }}" --settings .github\cd-maven-settings.xml
 
       # Build jar, still needed by Jpackage even with the jlink runtime ???
       - name: Maven Build Jar
-        run: ./mvnw --no-transfer-progress --batch-mode -DskipTests package
+        run: ./mvnw --no-transfer-progress --batch-mode -DskipTests package --settings .github\cd-maven-settings.xml
 
       # Wix v3 is needed by Jpackage
       - name: Winget Install WiX v3
@@ -220,7 +220,7 @@ jobs:
       - name: JReleaser JPackage Assemble
         # The shell is bash on Linux and Powershell in Windows
         # The quotes are mandatory for Windows otherwise it will see -Djreleaser.select as powershell parameter
-        run: ./mvnw jreleaser:assemble "-Djreleaser.select.current.platform" "-Djreleaser.assemblers=jpackage" --no-transfer-progress --batch-mode
+        run: ./mvnw jreleaser:assemble "-Djreleaser.select.current.platform" "-Djreleaser.assemblers=jpackage" --no-transfer-progress --batch-mode --settings .github\cd-maven-settings.xml
 
       # Upload log
       - name: JReleaser output
