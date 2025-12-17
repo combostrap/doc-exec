@@ -1,4 +1,5 @@
 #!/usr/bin/env pwsh
+# Deprecated: we use mvnw jreleaser now
 
 function Find-GitRoot {
     $dir = Get-Location

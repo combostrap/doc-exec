@@ -7,6 +7,7 @@ import java.util.logging.Level;
 
 /**
  * TypeConverter for java.util.logging.Level
+ * When an option/argument variable has the type Level, picocli uses this method to convert it from string
  */
 public class LogLevelConverter implements CommandLine.ITypeConverter<Level> {
 

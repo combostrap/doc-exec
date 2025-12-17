@@ -1,510 +1,620 @@
 <?xml version="1.0"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <modelVersion>4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
 
-    <name>Combostrap Doc Exec</name>
-    <groupId>com.combostrap</groupId>
-    <artifactId>combostrap-doc-exec</artifactId>
-    <version>1.0.0</version>
+  <name>Combostrap Doc Exec</name>
+  <groupId>com.combostrap</groupId>
+  <artifactId>combostrap-doc-exec</artifactId>
+  <version>1.1.0-SNAPSHOT</version>
+  <description>Doc Exec, execution of code block inside documentation</description>
+  <url>https://github.com/combostrap/doc-exec</url>
 
-    <!-- Organization used in the manifest file as Package vendor -->
-    <organization>
-        <name>Combostrap</name>
-        <url>https://www.combostrap.com</url>
-    </organization>
+  <licenses>
+    <license>
+      <name>Apache License 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
 
-    <properties>
+  <developers>
+    <developer>
+      <id>combostrap.com</id>
+      <name>Combostrap Project Contributors</name>
+      <url>https://www.combostrap.com</url>
+      <organization>Combostrap</organization>
+      <organizationUrl>https://www.combostrap.com</organizationUrl>
+    </developer>
+  </developers>
 
-        <!-- Why 17: To get JPackage to create msi -->
-        <!-- Why the full version ? Because it's the name of the extracted directory -->
-        <!-- Note in the disco api, it's known as the Java version, not the jdk version -->
-        <jdk.version>17.0.16+8</jdk.version>
-        <jdk.distribution>temurin</jdk.distribution>
-        <!-- The location of the jdk by platform
-        In temp, so that we don't need to download them again after a mvn clean -->
-        <jdk.download-directory>${java.io.tmpdir}/jdks</jdk.download-directory>
+  <scm>
+    <connection>scm:git:git://github.com/combostrap/doc-exec.git</connection>
+    <url>https://github.com/combostrap/doc-exec</url>
+  </scm>
 
-        <!-- Where are the dependency copied (Jlink and JArchive needs them) -->
-        <dependency.output-directory>${project.build.directory}/deps</dependency.output-directory>
+  <!-- Organization used in the manifest file as Package vendor -->
+  <organization>
+    <name>Combostrap</name>
+    <url>https://www.combostrap.com</url>
+  </organization>
 
-        <!-- JReleaser -->
-        <jreleaser.version>1.21.0</jreleaser.version>
+  <properties>
 
-        <!-- Encoding -->
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- Why 17: To get JPackage to create msi -->
+    <!-- Why the full version ? Because it's the name of the extracted directory -->
+    <!-- Note in the disco api, it's known as the Java version, not the jdk version -->
+    <jdk.version.major>17</jdk.version.major>
+    <!-- sdk list java -->
+    <jdk.version>17.0.16</jdk.version>
+    <!-- The built (ie the 8 in 17.0.16+8)-->
+    <jdk.version.build>8</jdk.version.build>
+    <!-- The setup disco value, brew value -->
+    <jdk.distribution>temurin</jdk.distribution>
+    <!-- The location of the jdk by platform
+    In temp, so that we don't need to download them again after a mvn clean -->
+    <!-- The directory where the jdks are downloaded -->
+    <jdk.output.directory>${java.io.tmpdir}/jdks</jdk.output.directory>
+    <!-- Where are the dependency copied (Jlink and JArchive needs them) -->
+    <!-- Where to copy the dependencies for packaging -->
+    <dependency.output.directory>${project.build.directory}/deps</dependency.output.directory>
 
-        <!-- Compiler Language -->
-        <maven.compiler.release>11</maven.compiler.release>
+    <!-- JReleaser -->
+    <jreleaser.version>1.21.0</jreleaser.version>
 
-        <!-- Maven Plugin versions -->
-        <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
-        <maven.jar.plugin.version>3.4.1</maven.jar.plugin.version>
-        <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
-        <maven.resource.plugin.version>3.3.1</maven.resource.plugin.version>
-        <maven.javadoc.plugin.version>3.7.0</maven.javadoc.plugin.version>
-        <maven.gpg.plugin.version>3.2.4</maven.gpg.plugin.version>
-        <maven.dependency.plugin.version>3.7.0</maven.dependency.plugin.version>
-        <maven.clean.plugin.version>3.3.2</maven.clean.plugin.version>
-        <maven.deploy.plugin.version>3.1.2</maven.deploy.plugin.version>
-        <maven.install.plugin.version>3.1.2</maven.install.plugin.version>
-        <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
-        <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
-        <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
-        <maven.surefire.report.plugin.version>3.5.2</maven.surefire.report.plugin.version>
-        <maven.failsafe.plugin.version>3.5.2</maven.failsafe.plugin.version>
-        <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
-        <maven.dependency.versions.check.plugin.version>9.2.0</maven.dependency.versions.check.plugin.version>
-        <maven.asciidoctor.plugin.version>3.0.0</maven.asciidoctor.plugin.version>
-        <maven.build.helper.maven.plugin.version>3.6.0</maven.build.helper.maven.plugin.version>
-        <maven.cyclonedx.plugin.version>2.8.0</maven.cyclonedx.plugin.version>
-        <!-- https://mvnrepository.com/artifact/org.codehaus.mojo/exec-maven-plugin -->
-        <maven.exec.plugin.version>3.5.0</maven.exec.plugin.version>
+    <!-- Encoding -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <!-- https://github.com/git-commit-id/git-commit-id-maven-plugin/releases -->
-        <maven.git.plugin.version>9.0.2</maven.git.plugin.version>
+    <!-- Compiler Language -->
+    <maven.compiler.release>11</maven.compiler.release>
 
-        <!-- Jackson version -->
-        <jackson.version>2.20.0</jackson.version>
-    </properties>
-    <dependencies>
+    <!--
+      staging repo value used at multiple place (https://jreleaser.org/guide/latest/examples/maven/staging-artifacts.html)
+      Don't use ${project.build.directory} for the target
+      Why? JReleaser don't like that as it check for each module if the directory exists
+      if the module does not deploy, we get this error:
+      stagingRepository does not exist: cli/target/staging-deploy
+    -->
+    <jreleaser.staging.deploy>./target/staging-deploy</jreleaser.staging.deploy>
 
-        <!-- Exec -->
-        <dependency>
-            <groupId>org.zeroturnaround</groupId>
-            <artifactId>zt-exec</artifactId>
-            <version>1.12</version>
-        </dependency>
+    <!-- Maven Plugin versions -->
+    <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+    <maven.jar.plugin.version>3.4.1</maven.jar.plugin.version>
+    <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
+    <maven.resource.plugin.version>3.3.1</maven.resource.plugin.version>
+    <maven.javadoc.plugin.version>3.7.0</maven.javadoc.plugin.version>
+    <maven.gpg.plugin.version>3.2.4</maven.gpg.plugin.version>
+    <maven.dependency.plugin.version>3.7.0</maven.dependency.plugin.version>
+    <maven.clean.plugin.version>3.3.2</maven.clean.plugin.version>
+    <maven.deploy.plugin.version>3.1.2</maven.deploy.plugin.version>
+    <maven.install.plugin.version>3.1.2</maven.install.plugin.version>
+    <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
+    <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
+    <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
+    <maven.surefire.report.plugin.version>3.5.2</maven.surefire.report.plugin.version>
+    <maven.failsafe.plugin.version>3.5.2</maven.failsafe.plugin.version>
+    <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
+    <maven.asciidoctor.plugin.version>3.0.0</maven.asciidoctor.plugin.version>
+    <maven.build.helper.maven.plugin.version>3.6.0</maven.build.helper.maven.plugin.version>
+    <maven.cyclonedx.plugin.version>2.8.0</maven.cyclonedx.plugin.version>
+    <!-- https://mvnrepository.com/artifact/org.codehaus.mojo/exec-maven-plugin -->
+    <maven.exec.plugin.version>3.5.0</maven.exec.plugin.version>
 
-        <!-- CLI -->
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.7.6</version>
-        </dependency>
+    <!-- https://github.com/git-commit-id/git-commit-id-maven-plugin/releases -->
+    <maven.git.plugin.version>9.0.2</maven.git.plugin.version>
 
-        <!-- Terminal UI -->
-        <!-- https://mvnrepository.com/artifact/com.googlecode.lanterna/lanterna        -->
-        <dependency>
-            <groupId>com.googlecode.lanterna</groupId>
-            <artifactId>lanterna</artifactId>
-            <version>3.1.3</version>
-        </dependency>
+    <!-- Jackson version -->
+    <jackson.version>2.20.0</jackson.version>
+  </properties>
+  <dependencies>
 
-        <!-- Json Write for results -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
+    <!-- Exec -->
+    <dependency>
+      <groupId>org.zeroturnaround</groupId>
+      <artifactId>zt-exec</artifactId>
+      <version>1.12</version>
+    </dependency>
 
-        <!-- Yaml write to show config -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
+    <!-- CLI -->
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>4.7.6</version>
+    </dependency>
+
+    <!-- Terminal UI -->
+    <!-- https://mvnrepository.com/artifact/com.googlecode.lanterna/lanterna        -->
+    <dependency>
+      <groupId>com.googlecode.lanterna</groupId>
+      <artifactId>lanterna</artifactId>
+      <version>3.1.3</version>
+    </dependency>
+
+    <!-- Json Write for results -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+
+    <!-- Yaml write to show config -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
 
 
-        <!-- Testing -->
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-launcher</artifactId>
-            <version>1.12.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.12.1</version>
-            <scope>test</scope>
-        </dependency>
+    <!-- Testing -->
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <version>1.12.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>5.12.1</version>
+      <scope>test</scope>
+    </dependency>
 
-        <!-- JUL implementation (ie JUL was introduced at 1.4) -->
-        <!-- to disable the Slf4j Warning -->
-        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-jdk14 -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-jdk14</artifactId>
-            <!-- 1.7.2 used by turnaround -->
-            <version>1.7.29</version>
-            <scope>runtime</scope>
-        </dependency>
+    <!-- JUL implementation (ie JUL was introduced at 1.4) -->
+    <!-- to disable the Slf4j Warning -->
+    <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-jdk14 -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-jdk14</artifactId>
+      <!-- 1.7.2 used by turnaround -->
+      <version>1.7.29</version>
+      <scope>runtime</scope>
+    </dependency>
 
-    </dependencies>
 
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${maven.compiler.plugin.version}</version>
-                    <configuration>
-                        <optimize>true</optimize>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>default-compile</id>
-                            <configuration>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>${maven.source.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <version>${maven.assembly.plugin.version}</version>
-                    <executions>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>${maven.jar.plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <id>default-jar</id>
-                            <configuration>
-                                <archive>
-                                    <manifest>
-                                        <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                                        <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                                    </manifest>
-                                    <!-- Generate a jar INDEX.LIST -->
-                                    <index>true</index>
-                                    <manifestEntries>
-                                        <!-- Add the Maven coordinates in the manifest -->
-                                        <Maven-Project-Group-Id>${project.groupId}</Maven-Project-Group-Id>
-                                        <Maven-Project-Artifact-Id>${project.artifactId}</Maven-Project-Artifact-Id>
-                                        <Maven-Project-Version>${project.version}</Maven-Project-Version>
-                                        <Maven-Version>${maven.version}</Maven-Version>
-                                        <Maven-Build-Timestamp>${maven.build.timestamp}</Maven-Build-Timestamp>
-                                        <Maven-Build-Version>${maven.build.version}</Maven-Build-Version>
-                                        <!-- Package -->
-                                        <!-- https://docs.oracle.com/javase/8/docs/technotes/guides/versioning/spec/versioning2.html#wp89936 -->
-                                        <Package-Title>${project.name}</Package-Title>
-                                        <Package-Version>${project.version}</Package-Version>
-                                        <Package-Vendor>${project.organization.name}</Package-Vendor>
-                                        <Package-Vendor-Url>${project.organization.url}</Package-Vendor-Url>
-                                        <!-- Os -->
-                                        <Os-Arch>${os.arch}</Os-Arch>
-                                        <Os-Name>${os.name}</Os-Name>
-                                        <Os-Version>${os.version}</Os-Version>
-                                        <!-- Java -->
-                                        <Java-Version>${java.version}</Java-Version>
-                                        <Java-Version-Date>${java.version.date}</Java-Version-Date>
-                                        <Java-Vendor>${java.vendor}</Java-Vendor>
-                                        <Java-Vendor-Url>${java.vendor.url}</Java-Vendor-Url>
-                                        <Java-Vendor-Version>${java.vendor.version}</Java-Vendor-Version>
-                                        <Java-VM-Name>${java.vm.name}</Java-VM-Name>
-                                        <Java-VM-Version>${java.vm.version}</Java-VM-Version>
-                                        <Java-VM-Vendor>${java.vm.vendor}</Java-VM-Vendor>
-                                        <Java-VM-Info>${java.vm.info}</Java-VM-Info>
-                                        <Java-Runtime-Name>${java.runtime.name}</Java-Runtime-Name>
-                                        <Java-Runtime-Version>${java.runtime.version}</Java-Runtime-Version>
-                                        <!-- Add the Git and build info -->
-                                        <!-- https://github.com/git-commit-id/git-commit-id-maven-plugin/blob/master/docs/configuration-and-properties.md -->
-                                        <!-- https://github.com/git-commit-id/git-commit-id-plugin-core/blob/master/src/main/java/pl/project13/core/GitCommitPropertyConstant.java -->
-                                        <!-- Property are immutable so we can't set them and the IDE is not happy, we silence the warning -->
-                                        <!--suppress MavenModelInspection -->
-                                        <Build-Host>${git.build.host}</Build-Host>
-                                        <!-- The CI unique id -->
-                                        <!--suppress MavenModelInspection -->
-                                        <Build-Number>${git.build.number}</Build-Number>
-                                        <!-- Git info-->
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Branch>${git.branch}</Git-Branch>
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Dirty>${git.dirty}</Git-Dirty>
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Commit>${git.commit.id}</Git-Commit>
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Commit-Abbrev>${git.commit.id.abbrev}</Git-Commit-Abbrev>
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Commit-Describe>${git.commit.id.describe}</Git-Commit-Describe>
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Commit-User-name>${git.build.user.name}</Git-Commit-User-name>
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Commit-User-email>${git.build.user.email}</Git-Commit-User-email>
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Commit-Message-Short>${git.commit.message.short}</Git-Commit-Message-Short>
-                                        <!--suppress MavenModelInspection -->
-                                        <!-- Full Message create bad Manifest file because the next line does not have any leading space -->
-                                        <!-- <Git-Commit-Message-Full>${git.commit.message.full}</Git-Commit-Message-Full>-->
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Commit-Time>${git.commit.time}</Git-Commit-Time>
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Tag>${git.tag}</Git-Tag>
-                                        <!--suppress MavenModelInspection -->
-                                        <Git-Tags>${git.tags}</Git-Tags>
-                                    </manifestEntries>
-                                </archive>
-                                <!-- Remove examples and native-image -->
-                                <excludes>
-                                    <exclude>/examples/**</exclude>
-                                    <exclude>META-INF/native-image/**</exclude>
-                                </excludes>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>native-image-jar</id>
-                            <configuration>
-                                <archive>
-                                    <manifest>
-                                        <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                                        <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                                    </manifest>
-                                    <!-- Generate a jar INDEX.LIST -->
-                                    <index>true</index>
-                                    <manifestEntries>
-                                        <!-- Add the Maven coordinates in the manifest -->
-                                        <Maven-Group-Id>${project.groupId}</Maven-Group-Id>
-                                        <Maven-Artifact-Id>${project.artifactId}</Maven-Artifact-Id>
-                                        <Maven-Version>${project.version}</Maven-Version>
-                                    </manifestEntries>
-                                </archive>
-                                <!-- Remove examples -->
-                                <excludes>
-                                    <exclude>/examples/**</exclude>
-                                </excludes>
-                                <classifier>native-image</classifier>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven.surefire.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>${maven.failsafe.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-report-plugin</artifactId>
-                    <version>${maven.surefire.report.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-site-plugin</artifactId>
-                    <version>${maven.site.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>${maven.javadoc.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-gpg-plugin</artifactId>
-                    <version>${maven.gpg.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>${maven.resource.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>${maven.dependency.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-install-plugin</artifactId>
-                    <version>${maven.install.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <version>${maven.deploy.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-clean-plugin</artifactId>
-                    <version>${maven.clean.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>${maven.enforcer.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>com.ning.maven.plugins</groupId>
-                    <artifactId>maven-dependency-versions-check-plugin</artifactId>
-                    <version>${maven.dependency.versions.check.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>${maven.build.helper.maven.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <version>${maven.exec.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.cyclonedx</groupId>
-                    <artifactId>cyclonedx-maven-plugin</artifactId>
-                    <version>${maven.cyclonedx.plugin.version}</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${maven.compiler.plugin.version}</version>
+          <configuration>
+            <optimize>true</optimize>
+          </configuration>
+          <executions>
+            <execution>
+              <id>default-compile</id>
+              <configuration>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>${maven.source.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>${maven.assembly.plugin.version}</version>
+          <executions>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${maven.jar.plugin.version}</version>
+          <executions>
+            <execution>
+              <id>default-jar</id>
+              <configuration>
+                <archive>
+                  <manifest>
+                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                    <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                  </manifest>
+                  <!-- Generate a jar INDEX.LIST -->
+                  <index>true</index>
+                  <manifestEntries>
+                    <!-- Add the Maven coordinates in the manifest -->
+                    <Maven-Project-Group-Id>${project.groupId}</Maven-Project-Group-Id>
+                    <Maven-Project-Artifact-Id>${project.artifactId}</Maven-Project-Artifact-Id>
+                    <Maven-Project-Version>${project.version}</Maven-Project-Version>
+                    <Maven-Version>${maven.version}</Maven-Version>
+                    <Maven-Build-Timestamp>${maven.build.timestamp}</Maven-Build-Timestamp>
+                    <Maven-Build-Version>${maven.build.version}</Maven-Build-Version>
+                    <!-- Package -->
+                    <!-- https://docs.oracle.com/javase/8/docs/technotes/guides/versioning/spec/versioning2.html#wp89936 -->
+                    <Package-Title>${project.name}</Package-Title>
+                    <Package-Version>${project.version}</Package-Version>
+                    <Package-Vendor>${project.organization.name}</Package-Vendor>
+                    <Package-Vendor-Url>${project.organization.url}</Package-Vendor-Url>
+                    <!-- Os -->
+                    <Os-Arch>${os.arch}</Os-Arch>
+                    <Os-Name>${os.name}</Os-Name>
+                    <Os-Version>${os.version}</Os-Version>
+                    <!-- Java -->
+                    <Java-Version>${java.version}</Java-Version>
+                    <Java-Version-Date>${java.version.date}</Java-Version-Date>
+                    <Java-Vendor>${java.vendor}</Java-Vendor>
+                    <Java-Vendor-Url>${java.vendor.url}</Java-Vendor-Url>
+                    <Java-Vendor-Version>${java.vendor.version}</Java-Vendor-Version>
+                    <Java-VM-Name>${java.vm.name}</Java-VM-Name>
+                    <Java-VM-Version>${java.vm.version}</Java-VM-Version>
+                    <Java-VM-Vendor>${java.vm.vendor}</Java-VM-Vendor>
+                    <Java-VM-Info>${java.vm.info}</Java-VM-Info>
+                    <Java-Runtime-Name>${java.runtime.name}</Java-Runtime-Name>
+                    <Java-Runtime-Version>${java.runtime.version}</Java-Runtime-Version>
+                    <!-- Add the Git and build info -->
+                    <!-- https://github.com/git-commit-id/git-commit-id-maven-plugin/blob/master/docs/configuration-and-properties.md -->
+                    <!-- https://github.com/git-commit-id/git-commit-id-plugin-core/blob/master/src/main/java/pl/project13/core/GitCommitPropertyConstant.java -->
+                    <!-- Property are immutable so we can't set them and the IDE is not happy, we silence the warning -->
+                    <!--suppress MavenModelInspection -->
+                    <Build-Host>${git.build.host}</Build-Host>
+                    <!-- The CI unique id -->
+                    <!--suppress MavenModelInspection -->
+                    <Build-Number>${git.build.number}</Build-Number>
+                    <!-- Git info-->
+                    <!--suppress MavenModelInspection -->
+                    <Git-Branch>${git.branch}</Git-Branch>
+                    <!--suppress MavenModelInspection -->
+                    <Git-Dirty>${git.dirty}</Git-Dirty>
+                    <!--suppress MavenModelInspection -->
+                    <Git-Commit>${git.commit.id}</Git-Commit>
+                    <!--suppress MavenModelInspection -->
+                    <Git-Commit-Abbrev>${git.commit.id.abbrev}</Git-Commit-Abbrev>
+                    <!--suppress MavenModelInspection -->
+                    <Git-Commit-Describe>${git.commit.id.describe}</Git-Commit-Describe>
+                    <!--suppress MavenModelInspection -->
+                    <Git-Commit-User-name>${git.build.user.name}</Git-Commit-User-name>
+                    <!--suppress MavenModelInspection -->
+                    <Git-Commit-User-email>${git.build.user.email}</Git-Commit-User-email>
+                    <!--suppress MavenModelInspection -->
+                    <Git-Commit-Message-Short>${git.commit.message.short}</Git-Commit-Message-Short>
+                    <!--suppress MavenModelInspection -->
+                    <!-- Full Message create bad Manifest file because the next line does not have any leading space -->
+                    <!-- <Git-Commit-Message-Full>${git.commit.message.full}</Git-Commit-Message-Full>-->
+                    <!--suppress MavenModelInspection -->
+                    <Git-Commit-Time>${git.commit.time}</Git-Commit-Time>
+                    <!--suppress MavenModelInspection -->
+                    <Git-Tag>${git.tag}</Git-Tag>
+                    <!--suppress MavenModelInspection -->
+                    <Git-Tags>${git.tags}</Git-Tags>
+                  </manifestEntries>
+                </archive>
+                <!-- Remove examples and native-image -->
+                <excludes>
+                  <exclude>/examples/**</exclude>
+                  <exclude>META-INF/native-image/**</exclude>
+                </excludes>
+              </configuration>
+            </execution>
+            <execution>
+              <id>native-image-jar</id>
+              <configuration>
+                <archive>
+                  <manifest>
+                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                    <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                  </manifest>
+                  <!-- Generate a jar INDEX.LIST -->
+                  <index>true</index>
+                  <manifestEntries>
+                    <!-- Add the Maven coordinates in the manifest -->
+                    <Maven-Group-Id>${project.groupId}</Maven-Group-Id>
+                    <Maven-Artifact-Id>${project.artifactId}</Maven-Artifact-Id>
+                    <Maven-Version>${project.version}</Maven-Version>
+                  </manifestEntries>
+                </archive>
+                <!-- Remove examples -->
+                <excludes>
+                  <exclude>/examples/**</exclude>
+                </excludes>
+                <classifier>native-image</classifier>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${maven.surefire.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${maven.failsafe.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-report-plugin</artifactId>
+          <version>${maven.surefire.report.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>${maven.site.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${maven.javadoc.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>${maven.gpg.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>${maven.resource.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${maven.dependency.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>${maven.install.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>${maven.deploy.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>${maven.clean.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${maven.enforcer.plugin.version}</version>
+        </plugin>
+        <!-- https://mvnrepository.com/artifact/com.ning.maven.plugins/maven-dependency-versions-check-plugin -->
+        <plugin>
+          <groupId>com.ning.maven.plugins</groupId>
+          <artifactId>maven-dependency-versions-check-plugin</artifactId>
+          <version>2.0.4</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${maven.build.helper.maven.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${maven.exec.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.cyclonedx</groupId>
+          <artifactId>cyclonedx-maven-plugin</artifactId>
+          <version>${maven.cyclonedx.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.jreleaser</groupId>
+          <artifactId>jreleaser-maven-plugin</artifactId>
+          <version>1.21.0</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <!-- Git Injection -->
+        <!-- https://github.com/git-commit-id/git-commit-id-maven-plugin -->
+        <groupId>io.github.git-commit-id</groupId>
+        <artifactId>git-commit-id-maven-plugin</artifactId>
+        <version>${maven.git.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>get-the-git-infos</id>
+            <goals>
+              <goal>revision</goal>
+            </goals>
+            <!-- Binds to the initialize phase by default, so that all git properties are available -->
+            <phase>initialize</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <skipPoms>false</skipPoms>
+          <!-- Inject the properties in all pom -->
+          <injectAllReactorProjects>true</injectAllReactorProjects>
+          <!-- Use native git because git.tag was blank -->
+          <useNativeGit>true</useNativeGit>
+        </configuration>
+      </plugin>
+      <!-- Create a test jar -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-test-jar</id>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Use the external jreleaser file -->
+      <!-- It inherits the maven properties -->
+      <plugin>
+        <groupId>org.jreleaser</groupId>
+        <artifactId>jreleaser-maven-plugin</artifactId>
+        <inherited>false</inherited>
+        <configuration>
+          <!-- https://jreleaser.org/guide/latest/tools/jreleaser-maven.html#_configuration -->
+          <configFile>jreleaser.yml</configFile>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+
+  <profiles>
+    <!-- Download the jdks -->
+    <!-- ./mvnw -Pjdks -->
+    <profile>
+      <id>jdks</id>
+      <build>
+        <defaultGoal>jdks:setup-jdks</defaultGoal>
         <plugins>
-            <plugin>
-                <!-- Git Injection -->
-                <!-- https://github.com/git-commit-id/git-commit-id-maven-plugin -->
-                <groupId>io.github.git-commit-id</groupId>
-                <artifactId>git-commit-id-maven-plugin</artifactId>
-                <version>${maven.git.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>get-the-git-infos</id>
-                        <goals>
-                            <goal>revision</goal>
-                        </goals>
-                        <!-- Binds to the initialize phase by default, so that all git properties are available -->
-                        <phase>initialize</phase>
-                    </execution>
-                </executions>
-                <configuration>
-                    <skipPoms>false</skipPoms>
-                    <!-- Inject the properties in all pom -->
-                    <injectAllReactorProjects>true</injectAllReactorProjects>
-                    <!-- Use native git because git.tag was blank -->
-                    <useNativeGit>true</useNativeGit>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>examples/**</exclude>
-                    </excludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                            <goal>test-jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- Create a test jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-test-jar</id>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+          <plugin>
+            <groupId>org.jreleaser</groupId>
+            <artifactId>jdks-maven-plugin</artifactId>
+            <version>${jreleaser.version}</version>
+            <configuration>
+              <outputDirectory>${jdk.output.directory}</outputDirectory>
+              <jdks>
+                <jdk>
+                  <!-- The jdk name is known as the platform name -->
+                  <!-- It's a unique combination of os and arch  -->
+                  <!-- Arm64 and not aarch64 because this is the name used in GitHub -->
+                  <!-- Easier to pronounce -->
+                  <!-- Distro is not in the name as it's the same for all JDK -->
+                  <name>linux-arm64</name>
+                  <url>
+                    https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.16_8.tar.gz
+                  </url>
+                  <checksum>sha256/423416447885d9e45f96dd9e0b2c1367da5e1b0353e187cfdf9388c9820ac147
+                  </checksum>
+                  <platform>linux-aarch_64</platform>
+                </jdk>
+                <jdk>
+                  <name>linux-x64</name>
+                  <url>
+                    https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_x64_linux_hotspot_17.0.16_8.tar.gz
+                  </url>
+                  <checksum>sha256/166774efcf0f722f2ee18eba0039de2d685b350ee14d7b69e6f83437dafd2af1
+                  </checksum>
+                  <platform>linux-x86_64</platform>
+                </jdk>
+                <jdk>
+                  <name>linux-musl-x64</name>
+                  <url>
+                    https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_x64_alpine-linux_hotspot_17.0.16_8.tar.gz
+                  </url>
+                  <checksum>sha256/2e83ac152fb315db0d667761f2120b64504800f641a513044e834a1a41f29bc0
+                  </checksum>
+                  <platform>linux_musl-x86_64</platform>
+                </jdk>
+                <jdk>
+                  <!-- macOS and not osx because this is the name used in GitHub -->
+                  <!-- We don't need a specific function -->
+                  <name>macos-arm64</name>
+                  <url>
+                    https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.16_8.tar.gz
+                  </url>
+                  <checksum>sha256/f9845abc8403f1d489402201064e7b9f2c57605d8717b85a95a15d94f882eeb7
+                  </checksum>
+                  <platform>osx-aarch_64</platform>
+                </jdk>
+                <jdk>
+                  <!-- macOS and not osx because this is the name used in GitHub -->
+                  <!-- We don't need a specific function -->
+                  <name>macos-x64</name>
+                  <url>
+                    https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_x64_mac_hotspot_17.0.16_8.tar.gz
+                  </url>
+                  <checksum>sha256/ca5700c5d13124467ae52e1609881d7ce45d974870b18c3382ea8b7ae69d0f00
+                  </checksum>
+                  <platform>osx-x86_64</platform>
+                </jdk>
+                <jdk>
+                  <name>windows-x64</name>
+                  <url>
+                    https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_x64_windows_hotspot_17.0.16_8.zip
+                  </url>
+                  <checksum>sha256/8c7cfff78a55c56ebaf470ed6a89c6466b47d8274bdabdda997d7507c20325c5
+                  </checksum>
+                  <platform>windows-x86_64</platform>
+                </jdk>
+              </jdks>
+            </configuration>
+          </plugin>
         </plugins>
-    </build>
-
-
-    <profiles>
-        <!-- Download the jdks -->
-        <!-- ./mvnw -Pjdks -->
-        <profile>
-            <id>jdks</id>
-            <build>
-                <defaultGoal>jdks:setup-jdks</defaultGoal>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jreleaser</groupId>
-                        <artifactId>jdks-maven-plugin</artifactId>
-                        <version>${jreleaser.version}</version>
-                        <configuration>
-                            <outputDirectory>${jdk.download-directory}</outputDirectory>
-                            <jdks>
-                                <jdk>
-                                    <!-- The jdk name is known as the platform name -->
-                                    <!-- It's a unique combination of os and arch  -->
-                                    <!-- Arm64 and not aarch64 because this is the name used in GitHub -->
-                                    <!-- Easier to pronounce -->
-                                    <!-- Distro is not in the name as it's the same for all JDK -->
-                                    <name>linux-arm64</name>
-                                    <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.16_8.tar.gz</url>
-                                    <checksum>sha256/423416447885d9e45f96dd9e0b2c1367da5e1b0353e187cfdf9388c9820ac147</checksum>
-                                    <platform>linux-aarch_64</platform>
-                                </jdk>
-                                <jdk>
-                                    <name>linux-x64</name>
-                                    <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_x64_linux_hotspot_17.0.16_8.tar.gz</url>
-                                    <checksum>sha256/166774efcf0f722f2ee18eba0039de2d685b350ee14d7b69e6f83437dafd2af1</checksum>
-                                    <platform>linux-x86_64</platform>
-                                </jdk>
-                                <jdk>
-                                    <name>linux-musl-x64</name>
-                                    <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_x64_alpine-linux_hotspot_17.0.16_8.tar.gz</url>
-                                    <checksum>sha256/2e83ac152fb315db0d667761f2120b64504800f641a513044e834a1a41f29bc0</checksum>
-                                    <platform>linux_musl-x86_64</platform>
-                                </jdk>
-                                <jdk>
-                                    <!-- macOS and not osx because this is the name used in GitHub -->
-                                    <!-- We don't need a specific function -->
-                                    <name>macos-arm64</name>
-                                    <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.16_8.tar.gz</url>
-                                    <checksum>sha256/f9845abc8403f1d489402201064e7b9f2c57605d8717b85a95a15d94f882eeb7</checksum>
-                                    <platform>osx-aarch_64</platform>
-                                </jdk>
-                                <jdk>
-                                    <!-- macOS and not osx because this is the name used in GitHub -->
-                                    <!-- We don't need a specific function -->
-                                    <name>macos-x64</name>
-                                    <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_x64_mac_hotspot_17.0.16_8.tar.gz</url>
-                                    <checksum>sha256/ca5700c5d13124467ae52e1609881d7ce45d974870b18c3382ea8b7ae69d0f00</checksum>
-                                    <platform>osx-x86_64</platform>
-                                </jdk>
-                                <jdk>
-                                    <name>windows-x64</name>
-                                    <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.16%2B8/OpenJDK17U-jdk_x64_windows_hotspot_17.0.16_8.zip</url>
-                                    <checksum>sha256/8c7cfff78a55c56ebaf470ed6a89c6466b47d8274bdabdda997d7507c20325c5</checksum>
-                                    <platform>windows-x86_64</platform>
-                                </jdk>
-                            </jdks>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>deps</id>
-            <build>
-                <defaultGoal>dependency:copy-dependencies</defaultGoal>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <configuration>
-                            <outputDirectory>${dependency.output-directory}</outputDirectory>
-                            <includeScope>runtime</includeScope>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+      </build>
+    </profile>
+    <profile>
+      <id>deps</id>
+      <build>
+        <defaultGoal>dependency:copy-dependencies</defaultGoal>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <configuration>
+              <outputDirectory>${dependency.output.directory}</outputDirectory>
+              <includeScope>runtime</includeScope>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!-- For maven central publication with JReleaser -->
+      <!-- Creation of the artifacts -->
+      <!-- https://jreleaser.org/guide/latest/examples/maven/staging-artifacts.html -->
+      <id>publication</id>
+      <properties>
+        <altDeploymentRepository>local::file:${jreleaser.staging.deploy}</altDeploymentRepository>
+      </properties>
+      <build>
+        <defaultGoal>deploy</defaultGoal>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <attach>true</attach>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!--
+            Should be present only once otherwise we get this error:
+            Failed to execute goal org.apache.maven.plugins:maven-source-plugin:3.3.1:jar (attach-sources)
+            Presumably you have configured maven-source-plugin to execute twice in your build. You have to configure a classifier for at least one of them.
+          -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <exclude>examples/**</exclude>
+              </excludes>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <!-- Bundle the main sources of the project into a jar archive -->
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <attach>true</attach>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

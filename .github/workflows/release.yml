@@ -1,13 +1,24 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
 name: Release
 # Ref: https://raw.githubusercontent.com/jreleaser/helloworld-java-jpackage/refs/heads/main/.github/workflows/release.yml
 
 on:
   # Trigger on button click
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to checkout (vx.x.x or early-access)'
+        required: true
+        type: string
+        default: 'early-access'
   # Trigger on tag push
+  # Tag is just the same as a branch, it's a ref
+  # You can't restrict to a specific branch
   push:
     tags:
       - 'v*'
+      - 'early-access'
 
 # When you create and push a tag, Git might trigger the workflow twice if you have other push triggers (like on branches).
 # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#example-only-cancel-in-progress-jobs-or-runs-for-the-current-workflow
@@ -37,8 +48,9 @@ env:
   JRELEASER_JPACKAGE_ASSEMBLY_NAME: 'doc-exec-installer' # The jpackage assembly name
   JRELEASER_JLINK_ASSEMBLY_NAME: 'doc-exec-jre' # The jlink assembly name
   JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME: 'doc-exec-nojre'
-  JRELEASER_OUT_DIRECTORY: 'target'
+  BUILD_DIRECTORY: 'target'
   WORKFLOW_ID: release # the workflow name without extension
+  SNAPSHOT_TAG: 'early-access'
 
 jobs:
 
@@ -46,9 +58,9 @@ jobs:
   release-assemble:
     uses: ./.github/workflows/release-assemble-jpackage.yml
     with:
+      tag: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
       runner: 'windows-latest'
 
-  # Assemble artifacts except installers
   # Release all generated artifacts
   release:
     runs-on: ubuntu-latest
@@ -57,10 +69,10 @@ jobs:
     steps:
 
       # Checkout first as we do a control on the pom.xml version
-      - name: Git Checkout ${{ github.ref_name }}
+      - name: Git Checkout ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           fetch-depth: 0
 
       # Homebrew is installed but not in the path
@@ -71,45 +83,40 @@ jobs:
         run: brew install yq
 
       # Extract Props from pom.xml
-      - name: Props And Version Check ${{ github.ref_name }}
+      - name: Props And Version Check ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         id: props
         shell: bash
         run: |
-          
+
           set -TCEeuo pipefail
-          
+
           # Ref
-          REF=${{ github.ref_name }}
-          echo "ref=${REF}" >> $GITHUB_OUTPUT
-          
+          TAG=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
           # Generate the effective pom
           POM_EFFECTIVE="${{runner.temp}}/pom-effective.xml"
-          ./mvnw help:effective-pom --quiet "-Doutput=$POM_EFFECTIVE"
-          
-          # Project version and check
+          ./mvnw help:effective-pom --quiet "-Doutput=$POM_EFFECTIVE" --no-transfer-progress --batch-mode
+
+          # Project version and tag
           PROJECT_VERSION=$(yq --exit-status '.project.version' "$POM_EFFECTIVE")
-          echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
-          
-          if [ "v$PROJECT_VERSION" != "$REF" ]; then
-            echo "Project version in pom.xml (v$PROJECT_VERSION) is not the same as the branch/tag $REF"
+          PROJECT_TAG="v$PROJECT_VERSION"
+          if [[ "$PROJECT_VERSION" =~ .*-SNAPSHOT ]]; then
+            PROJECT_VERSION=${{env.SNAPSHOT_TAG}}
+            PROJECT_TAG=${{env.SNAPSHOT_TAG}}
+          fi
+
+          # Check
+          if [ "$PROJECT_TAG" != "$TAG" ]; then
+            echo "Derived Tag from pom.xml ($PROJECT_TAG) is not the same as the workflow tag $TAG"
             exit 1
           fi
-          
+
           JDK_VERSION=$(yq --exit-status '.project.properties."jdk.version"' "$POM_EFFECTIVE")
           echo "jdk_version=$JDK_VERSION" >> $GITHUB_OUTPUT
 
           JDK_DISTRO=$(yq --exit-status '.project.properties."jdk.distribution"' "$POM_EFFECTIVE")
           echo "jdk_distro=$JDK_DISTRO" >> $GITHUB_OUTPUT
-
-          JDK_DOWNLOAD_DIRECTORY=$(yq --exit-status '.project.properties."jdk.download-directory"' "$POM_EFFECTIVE")
-          echo "jdk_download_directory=$JDK_DOWNLOAD_DIRECTORY" >> $GITHUB_OUTPUT
-
-          # JDK Name - The jdk and runner id
-          # The name uses to download the jdk. It's unique by runner and unique by jdk
-          # It should be lowercase, we use the bash syntax to do that
-          # Why Node and not bash subsitution, macOS has an old bash: 3.2.57(1)-release
-          JDK_NAME=$(echo 'console.log("${{ runner.os }}-${{ runner.arch }}".toLowerCase())' | node -);
-          echo "jdk_name=${JDK_NAME}" >> $GITHUB_OUTPUT
 
 
       # Cache to not download the maven dependency between matrix run
@@ -120,7 +127,7 @@ jobs:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-          
+            ${{ runner.os }}-maven-
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -129,29 +136,37 @@ jobs:
           distribution: ${{ steps.props.outputs.jdk_distro }}
           cache: maven
 
+      - name: Download Java Maven Central Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: false
+        with:
+          pattern: java-maven-central-*
+          merge-multiple: true # dont' create the root archive directory
+          path: ${{env.BUILD_DIRECTORY}}/staging-deploy
+
       - name: Download Java Archive Artifacts
         uses: actions/download-artifact@v4
         continue-on-error: false
         with:
           pattern: java-archive-*
-          merge-multiple: true # download them to the same directory
-          path: ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME}}/java-archive
+          merge-multiple: true # dont' create the root archive directory
+          path: ${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME}}/java-archive
 
       - name: Download Jlink Artifacts
         uses: actions/download-artifact@v4
         continue-on-error: false
         with:
           pattern: jlink-*
-          merge-multiple: true # download them to the same directory
-          path: ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink
+          merge-multiple: true # dont' create the root archive directory
+          path: ${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink
 
       - name: Download Jpackage Installer Artifacts
         uses: actions/download-artifact@v4
         continue-on-error: false
         with:
           pattern: jpackage-*
-          merge-multiple: true # download them to the same directory
-          path: ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage
+          merge-multiple: true # dont' create the root archive directory
+          path: ${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JPACKAGE_ASSEMBLY_NAME}}/jpackage
 
       - name: Display structure of downloaded files
         run: ls -R
@@ -161,15 +176,11 @@ jobs:
         run:
           gpg --batch --yes --passphrase "${{ secrets.GPG_SOFTWARE_SIGNING_PASSPHRASE }}" --import <(echo "${{ secrets.GPG_SOFTWARE_SIGNING_KEY }}")
 
+      # https://jreleaser.org/guide/latest/concepts/workflow.html#_full_release
       - name: JReleaser Full Release
-        uses: jreleaser/release-action@v2
-        with:
-          arguments: full-release
         env:
-          JRELEASER_PROJECT_VERSION: ${{ steps.props.outputs.project_version }}
           # Mandatory passphrase otherwise: gpg: signing failed: Inappropriate ioctl for device
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_SOFTWARE_SIGNING_PASSPHRASE }}
-          JRELEASER_OUTPUT_DIRECTORY: ${{ env.JRELEASER_OUT_DIRECTORY }}
           # Token
           # JRELEASER_GITHUB_TOKEN should be secrets.GITHUB_TOKEN
           # Otherwise we get another push leading to a recursive start of release workflow
@@ -179,6 +190,16 @@ jobs:
           JRELEASER_WINGET_GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           JRELEASER_HOMEBREW_GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           JRELEASER_CHOCOLATEY_GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          JRELEASER_NEXUS2_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          JRELEASER_NEXUS2_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        shell: bash
+        run: |
+          set -TCEeuo pipefail
+          ./mvnw jreleaser:full-release \
+            --no-transfer-progress \
+            --batch-mode
 
       - name: JReleaser Logs
         if: always()
@@ -187,5 +208,5 @@ jobs:
           retention-days: 1
           name: jreleaser-logs-${{env.WORKFLOW_ID}}
           path: |
-            ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/trace.log
-            ${{env.JRELEASER_OUT_DIRECTORY}}/jreleaser/output.properties
+            ${{env.BUILD_DIRECTORY}}/jreleaser/trace.log
+            ${{env.BUILD_DIRECTORY}}/jreleaser/output.properties

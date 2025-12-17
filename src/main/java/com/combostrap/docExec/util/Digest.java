@@ -11,7 +11,7 @@ import java.security.NoSuchAlgorithmException;
 
 
 /**
- * An utility class to create a MD5 hash
+ * A utility class to create a MD5 hash
  */
 public class Digest {
 

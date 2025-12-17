@@ -4,7 +4,7 @@ set -TCEeuo pipefail
 
 # release
 rm -rf target/jreleaser/signatures
-jreleaser release
+mvnw jreleaser:release
 
 # Docker clean
 # One-liner with || true (ignores error if image doesn't exist)
@@ -12,4 +12,4 @@ docker image rm "${PROJECT_ORGANISATION_NAME}/${PROJECT_NAME}:latest" 2>/dev/nul
 docker image rm "${PROJECT_ORGANISATION_NAME}/${PROJECT_NAME}:${VERSION}" 2>/dev/null || true
 
 # publish (prepare, package, publish)
-jreleaser publish
+mvnw jreleaser:publish

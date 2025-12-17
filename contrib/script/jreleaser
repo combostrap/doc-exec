@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Deprecated: we use mvnw jreleaser now
+# See the mvnw wrapper of devfiles combo for local run
+# It injects the secrets
 
 set -TCEeuo pipefail
 
@@ -35,7 +38,7 @@ JDK_VERSION=$(yq --exit-status '.project.properties."jdk.version"' "$POM_EFFECTI
 export JDK_DISTRO # jdk distro
 JDK_DISTRO=$(yq --exit-status '.project.properties."jdk.distribution"' "$POM_EFFECTIVE")
 export DEPENDENCY_OUTPUT_DIRECTORY # jar dependency directory
-DEPENDENCY_OUTPUT_DIRECTORY=$(yq --exit-status '.project.properties."dependency.output-directory"' "$POM_EFFECTIVE")
+DEPENDENCY_OUTPUT_DIRECTORY=$(yq --exit-status '.project.properties."dependency.output.directory"' "$POM_EFFECTIVE")
 
 # No env for config file, we add it at the command line so that we can do
 # https://jreleaser.org/guide/latest/tools/jreleaser-cli.html#_environment_variables

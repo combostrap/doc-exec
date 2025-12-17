@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.logging.Level;
 
 public class PathSerializer extends StdSerializer<Path> {
 

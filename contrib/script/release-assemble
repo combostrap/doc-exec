@@ -66,5 +66,5 @@ unzip -p "$JAR" META-INF/MANIFEST.MF
 
 # assemble create the distributions
 # it's not a dependency of the release command
-jreleaser assemble
+mvnw jreleaser:assemble
 

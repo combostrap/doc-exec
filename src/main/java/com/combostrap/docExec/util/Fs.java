@@ -62,14 +62,14 @@ public class Fs {
 
     /**
      * An alias to the function {@link Files#write(Path, byte[], OpenOption...)}
-     * without any option.
+     * without any option that write the text file in UTF8
      *
      * @param s    - the string to write
      * @param path - the path to the file to write
      */
     public static void toFile(String s, Path path) {
         try {
-            Files.write(path, s.getBytes());
+            Files.write(path, s.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
