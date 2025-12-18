@@ -171,7 +171,7 @@ jobs:
 
           # Version Check
           APP_ROOT="${UNZIP_TARGET}/${ARCHIVE_NAME}"
-          if ! OUTPUT=$($APP_ROOT}/bin/${{ env.COMMAND }} --version); then
+          if ! OUTPUT=$("${APP_ROOT}/bin/${{ env.COMMAND }}" --version); then
             echo "Error while running ${{ env.COMMAND }}"
             exit 1
           fi
@@ -211,7 +211,7 @@ jobs:
 
           # Version Check
           APP_ROOT="${UNZIP_TARGET}/${ARCHIVE_NAME}"
-          if ! OUTPUT=$($APP_ROOT}/bin/${{ env.COMMAND }} --version); then
+          if ! OUTPUT=$("${APP_ROOT}/bin/${{ env.COMMAND }}" --version); then
             echo "Error while running ${{ env.COMMAND }}"
             exit 1
           fi

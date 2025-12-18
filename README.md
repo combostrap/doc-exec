@@ -118,7 +118,7 @@ brew uninstall doc-exec
 
 ### Docker (Linux, Windows, macOS)
 
-With [docker releases](https://github.com/ComboStrap/doc-exec/pkgs/container/doc-exec)
+With [docker releases](https://github.com/combostrap/doc-exec/pkgs/container/doc-exec-alpine)
 
 ```bash
 docker run \
@@ -145,11 +145,14 @@ winget uninstall --name doc-exec
 
 ### Chocolatey (Windows)
 
+
 ```bash
 choco install doc-exec
 # uninstall
-choco uninstall doc-exec 
+choco uninstall doc-exec
 ```
+
+For more information, see the [chocolatey doc-exec page](https://community.chocolatey.org/packages/doc-exec)
 
 ### Manually
 
