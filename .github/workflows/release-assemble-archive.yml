@@ -167,14 +167,17 @@ jobs:
           ARCHIVE_NAME="${{ steps.props.outputs.artifact_id }}-${{ steps.props.outputs.project_version }}-nojre"
           JAVA_ARCHIVE=${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JAVA_ARCHIVE_ASSEMBLY_NAME}}/java-archive/$ARCHIVE_NAME.zip
           UNZIP_TARGET="${{runner.temp}}"
-          unzip "$JAVA_ARCHIVE" -d "$UNZIP_TARGET"
-          if ! OUTPUT=$($UNZIP_TARGET/${ARCHIVE_NAME}/bin/${{ env.COMMAND }} --version); then
+          unzip "$JAVA_ARCHIVE" -q -d "$UNZIP_TARGET"
+
+          # Version Check
+          APP_ROOT="${UNZIP_TARGET}/${ARCHIVE_NAME}"
+          if ! OUTPUT=$($APP_ROOT}/bin/${{ env.COMMAND }} --version); then
             echo "Error while running ${{ env.COMMAND }}"
             exit 1
           fi
-          if [[ ! $OUTPUT =~ "${{ steps.props.outputs.project_version }}" ]]; then
-            echo "Version output does not contains the version"
-            echo "Version output: \n$OUTPUT"
+          if [[ ! $OUTPUT =~ ${{ steps.props.outputs.project_version }} ]]; then
+            echo "Version output does not contains the version (${{ steps.props.outputs.project_version }})"
+            echo -e "Version output: $OUTPUT"
             exit 1
           fi
 
@@ -205,13 +208,16 @@ jobs:
           JAVA_ARCHIVE=${{env.BUILD_DIRECTORY}}/jreleaser/assemble/${{env.JRELEASER_JLINK_ASSEMBLY_NAME}}/jlink/$ARCHIVE_NAME.zip
           UNZIP_TARGET="${{runner.temp}}"
           unzip "$JAVA_ARCHIVE" -d "$UNZIP_TARGET"
-          if ! OUTPUT=$($UNZIP_TARGET/${ARCHIVE_NAME}/bin/${{ env.COMMAND }} --version); then
+
+          # Version Check
+          APP_ROOT="${UNZIP_TARGET}/${ARCHIVE_NAME}"
+          if ! OUTPUT=$($APP_ROOT}/bin/${{ env.COMMAND }} --version); then
             echo "Error while running ${{ env.COMMAND }}"
             exit 1
           fi
-          if [[ ! $OUTPUT =~ "${{ steps.props.outputs.project_version }}" ]]; then
-            echo "Version output does not contains the version"
-            echo "Version output: \n$OUTPUT"
+          if [[ ! $OUTPUT =~ ${{ steps.props.outputs.project_version }} ]]; then
+            echo "Version output does not contains the version (${{ steps.props.outputs.project_version }})"
+            echo -e "Version output: $OUTPUT"
             exit 1
           fi
 
